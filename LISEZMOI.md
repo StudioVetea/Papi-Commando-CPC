@@ -887,3 +887,11 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 ### v41g : la grenade des officiers ne depasse plus sa portee
 - Cause : l'ecart vertical lanceur/Papi etait calcule sur un octet signe. Au-dela de 127 lignes (officier en haut, Papi en bas : cas frequent, l'ecran fait 200 lignes), l'ecart « passait en negatif » : la grenade partait dans le mauvais sens, avec la portee maximale, et sortait de l'ecran. Le signe est maintenant lu dans la retenue du `sub` (.clamp) : plus fiable, et 2 octets de moins.
 - Mesure : toutes les grenades atterrissent a 20 octets / 60 lignes au plus du lanceur (avant : jusqu'a 197 lignes).
+
+### v42 : cahier des charges du 19 octobre 2026 (missions des zones 1 a 3)
+- **Zone 1** (5 missions) : m1 15 soldats, m2 survivre 30 s, m3 25 soldats, **m4 « Find the Z80 »** (le Z80 tombe apres 15 kills, 7 unites, 100 % soldats ; remplace le Time Attack de 50 s), m5 boss Caporal Garatonku (6 unites, 250 points).
+- **Zone 2** (5 missions au lieu de 6) : **m1 25 soldats** (20 avant), m2 survivre 45 s, m3 15 officiers, m4 Z80 apres 20 kills, **m5 = boss Capitaine DanTaGoul** (100 % officiers, **5 unites** au lieu de 6, 350 points) ; l'ancienne m5 « tuer 25 officiers » est supprimee.
+- **Zone 3** (5 missions) : m1 25 officiers, m2 survivre 45 s, **m3 Z80 apres 25 kills** (20 avant), m4 20 generaux, m5 boss General Falzar (5 unites, 500 points).
+- Le jeu compte donc 15 missions (NZONES = 15 genere par convert.py) ; les touches secretes 1 a 5 du menu de test restent valables dans chaque zone.
+- **Invincibilite apres une mort : 1,5 s** (75 images, 138 avant).
+- Mesures : en zone 1, mission 4 : le Z80 tombe apres 15 kills et la mission se termine a sa prise (z80_f = 1, p_state = 2).

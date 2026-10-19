@@ -12,8 +12,8 @@ A chaques nouvelles mise à jour, un commit sera effectué !
 Je rappelle que Claude IA est utilisé pour l'assistance du code z80 du projet, tout le reste est géré et crée par moi-même.
 
 ## Jouer
-- `dist/PAPICPC_v41g_DIFFUSION.dsk` : version finale. Dans un émulateur (ou sur CPC), `RUN"PAPICPC"`.
-- `dist/PAPICPC_v41g_TEST.dsk` : version de test avec codes secrets (choix de la zone dans le menu, etc.).
+- `dist/PAPICPC_v42_DIFFUSION.dsk` : version finale. Dans un émulateur (ou sur CPC), `RUN"PAPICPC"`.
+- `dist/PAPICPC_v42_TEST.dsk` : version de test avec codes secrets (choix de la zone dans le menu, etc.).
 
 | Action | Joystick | Clavier |
 |---|---|---|

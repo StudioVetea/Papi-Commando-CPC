@@ -1340,7 +1340,7 @@ player_dying:
             jr z,.gameover
             xor a
             ld (p_state),a              ; Papi reapparait la ou il est mort (p_x, p_y, p_dir inchanges)
-            ld a,138                    ; invincibilite apres une mort : 138 images (120 avant, +15 %)
+            ld a,75                     ; invincibilite apres une mort : 75 images = 1,5 s
             ld (p_inv),a
             ret
 .gameover   call check_hi               ; meilleur score (le HUD le redessine)

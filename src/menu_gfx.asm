@@ -2,7 +2,7 @@
 TITLE_H     equ 27
 TITLE_Y     equ 30
 MENU_NZG    equ 3
-menu_zstart: db 0,5,11       ; premiere mission de chaque zone (touche + du menu)
+menu_zstart: db 0,5,10       ; premiere mission de chaque zone (touche + du menu)
 title_data:
  db #00,#00,#00,#00,#00,#40,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#80,#80,#80,#00,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0
  db #C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#00,#00,#00,#00,#00,#00,#00,#00

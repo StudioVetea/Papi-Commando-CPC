@@ -1,6 +1,6 @@
 ; --- genere par tools/convert.py : textes des ecrans de mission : x, y, couleur, texte ; x = 0 : fin ---
 intro_tab:
- dw intro_0,intro_1,intro_2,intro_3,intro_4,intro_5,intro_6,intro_7,intro_8,intro_9,intro_10,intro_11,intro_12,intro_13,intro_14,intro_15
+ dw intro_0,intro_1,intro_2,intro_3,intro_4,intro_5,intro_6,intro_7,intro_8,intro_9,intro_10,intro_11,intro_12,intro_13,intro_14
 intro_0:
  db 19,64,#F3,"MISSION 01",0
  db 5,96,#F3,"KILL 15 SOLDIERS.",0
@@ -16,8 +16,7 @@ intro_2:
  db 0
 intro_3:
  db 19,64,#F3,"MISSION 04",0
- db 13,96,#CF,"TIME ATTACK !",0
- db 13,116,#F3,"SURVIVE 50 S.",0
+ db 11,96,#F3,"FIND THE Z80 !",0
  db 0
 intro_4:
  db 19,64,#F3,"MISSION 05",0
@@ -26,7 +25,7 @@ intro_4:
  db 0
 intro_5:
  db 19,64,#F3,"MISSION 01",0
- db 5,96,#F3,"KILL 20 SOLDIERS.",0
+ db 5,96,#F3,"KILL 25 SOLDIERS.",0
  db 0
 intro_6:
  db 19,64,#F3,"MISSION 02",0
@@ -43,31 +42,27 @@ intro_8:
  db 0
 intro_9:
  db 19,64,#F3,"MISSION 05",0
- db 5,96,#F3,"KILL 25 OFFICERS.",0
- db 0
-intro_10:
- db 19,64,#F3,"MISSION 06",0
  db 15,96,#F3,"KILL CAPTAIN",0
  db 17,116,#F3,"DANTAGOUL !",0
  db 0
-intro_11:
+intro_10:
  db 19,64,#F3,"MISSION 01",0
  db 5,96,#F3,"KILL 25 OFFICERS.",0
  db 0
-intro_12:
+intro_11:
  db 19,64,#F3,"MISSION 02",0
  db 13,96,#CF,"TIME ATTACK !",0
  db 13,116,#F3,"SURVIVE 45 S.",0
  db 0
-intro_13:
+intro_12:
  db 19,64,#F3,"MISSION 03",0
  db 11,96,#F3,"FIND THE Z80 !",0
  db 0
-intro_14:
+intro_13:
  db 19,64,#F3,"MISSION 04",0
  db 5,96,#F3,"KILL 20 GENERALS.",0
  db 0
-intro_15:
+intro_14:
  db 19,64,#F3,"MISSION 05",0
  db 15,96,#F3,"KILL GENERAL",0
  db 23,116,#F3,"FALZAR !",0
@@ -82,7 +77,7 @@ intro_title2:
  db 5,40,#CF,"THE LOST BARRACKS",0
  db 0
 NZG equ 3
-zone_start: db 5,11,255
+zone_start: db 5,10,255
 intro_zend: dw intro_end0,intro_end1,intro_end2
 intro_end0:
  db 3,56,#CF,"CONGRATULATIONS !!",0
@@ -114,12 +109,11 @@ intro_missions:  ; mission : (nom de la zone, liste d images)
  dw intro_title2,intro_it7
  dw intro_title2,intro_it8
  dw intro_title2,intro_it9
- dw intro_title2,intro_it10
+ dw intro_title0,intro_it10
  dw intro_title0,intro_it11
  dw intro_title0,intro_it12
  dw intro_title0,intro_it13
  dw intro_title0,intro_it14
- dw intro_title0,intro_it15
 ; image : donnees (2), taille d une image (2), largeur en octets, hauteur en lignes, masque d images - 1, x final, y, drapeaux (bit 0 = arrive de la gauche, bit 1 = redessine a chaque image : decor devant les ennemis), retard
 intro_it0: db 3
  dw intro_unit1,72
@@ -142,13 +136,17 @@ intro_it2: db 3
  db 6,12,3,36,116,1,17
  dw intro_unit1,72
  db 6,12,3,46,116,1,7
-intro_it3: db 3
+intro_it3: db 5
  dw intro_unit1,72
- db 6,12,3,26,136,1,27
+ db 6,12,3,16,116,1,47
  dw intro_unit1,72
- db 6,12,3,36,136,1,17
+ db 6,12,3,26,116,1,37
+ dw intro_art3_2,72
+ db 6,12,0,36,116,1,27
  dw intro_unit1,72
- db 6,12,3,46,136,1,7
+ db 6,12,3,46,116,1,17
+ dw intro_unit1,72
+ db 6,12,3,56,116,1,7
 intro_it4: db 3
  dw intro_art4_0,72
  db 6,12,3,24,148,1,31
@@ -188,52 +186,45 @@ intro_it8: db 5
  db 6,12,3,56,116,1,7
 intro_it9: db 3
  dw intro_unit2,72
- db 6,12,3,26,116,1,27
- dw intro_unit2,72
- db 6,12,3,36,116,1,17
- dw intro_unit2,72
- db 6,12,3,46,116,1,7
-intro_it10: db 3
- dw intro_unit2,72
  db 6,12,3,26,148,1,27
- dw intro_art10_1,144
+ dw intro_art9_1,144
  db 6,24,3,36,136,1,17
  dw intro_unit2,72
  db 6,12,3,46,148,1,7
-intro_it11: db 3
+intro_it10: db 3
  dw intro_unit2,72
  db 6,12,3,26,116,1,27
  dw intro_unit2,72
  db 6,12,3,36,116,1,17
  dw intro_unit2,72
  db 6,12,3,46,116,1,7
-intro_it12: db 2
+intro_it11: db 2
  dw intro_unit1,72
  db 6,12,3,31,136,1,17
  dw intro_unit3,72
  db 6,12,3,41,136,1,7
-intro_it13: db 5
+intro_it12: db 5
  dw intro_unit2,72
  db 6,12,3,16,116,1,47
  dw intro_unit3,72
  db 6,12,3,26,116,1,37
- dw intro_art13_2,72
+ dw intro_art12_2,72
  db 6,12,0,36,116,1,27
  dw intro_unit2,72
  db 6,12,3,46,116,1,17
  dw intro_unit3,72
  db 6,12,3,56,116,1,7
-intro_it14: db 3
+intro_it13: db 3
  dw intro_unit3,72
  db 6,12,3,26,116,1,27
  dw intro_unit3,72
  db 6,12,3,36,116,1,17
  dw intro_unit3,72
  db 6,12,3,46,116,1,7
-intro_it15: db 3
+intro_it14: db 3
  dw intro_unit3,72
  db 6,12,3,26,148,1,27
- dw intro_art15_1,144
+ dw intro_art14_1,144
  db 6,24,3,36,136,1,17
  dw intro_unit3,72
  db 6,12,3,46,148,1,7
@@ -294,6 +285,12 @@ intro_unit3:
  db #41,#C3,#82,#41,#00,#00,#45,#C1,#E3,#D3,#82,#00,#10,#60,#C3,#80
  db #FC,#F9,#05,#30,#30,#74,#61,#80,#00,#0F,#30,#9A,#B8,#00,#00,#00
  db #25,#25,#00,#00,#00,#10,#0A,#54,#A2,#00,#00,#F9,#00,#00,#00,#00
+intro_art3_2:
+ db #00,#00,#54,#A8,#00,#00,#00,#45,#8A,#45,#00,#00,#F3,#45,#45,#45
+ db #00,#F3,#00,#45,#00,#CF,#00,#00,#F3,#00,#00,#00,#00,#F3,#00,#45
+ db #CF,#CF,#00,#00,#F3,#45,#45,#45,#00,#F3,#00,#45,#CF,#CF,#00,#00
+ db #F3,#00,#00,#00,#00,#F3,#00,#45,#CF,#CF,#00,#00,#F3,#45,#00,#45
+ db #00,#F3,#00,#45,#CF,#CF,#00,#00
 intro_art4_0:
  db #00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#C3,#41
  db #00,#00,#00,#40,#D3,#C3,#D3,#00,#41,#41,#D3,#41,#51,#00,#41,#C3
@@ -375,7 +372,7 @@ intro_art8_2:
  db #CF,#CF,#00,#00,#F3,#45,#45,#45,#00,#F3,#00,#45,#CF,#CF,#00,#00
  db #F3,#00,#00,#00,#00,#F3,#00,#45,#CF,#CF,#00,#00,#F3,#45,#00,#45
  db #00,#F3,#00,#45,#CF,#CF,#00,#00
-intro_art10_1:
+intro_art9_1:
  db #00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#F3,#00,#00
  db #00,#00,#51,#00,#00,#45,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00
  db #45,#CF,#CF,#00,#00,#00,#8A,#41,#CB,#00,#00,#01,#DB,#A2,#82,#A2
@@ -412,13 +409,13 @@ intro_art10_1:
  db #00,#00,#00,#00,#00,#80,#00,#00,#28,#3C,#8A,#00,#00,#00,#00,#00
  db #00,#00,#00,#00,#00,#7F,#AA,#00,#00,#00,#15,#15,#D1,#00,#00,#00
  db #3F,#00,#08,#00,#00,#54,#2A,#00,#00,#00,#00,#54,#00,#00,#00,#00
-intro_art13_2:
+intro_art12_2:
  db #00,#00,#54,#A8,#00,#00,#00,#45,#8A,#45,#00,#00,#F3,#45,#45,#45
  db #00,#F3,#00,#45,#00,#CF,#00,#00,#F3,#00,#00,#00,#00,#F3,#00,#45
  db #CF,#CF,#00,#00,#F3,#45,#45,#45,#00,#F3,#00,#45,#CF,#CF,#00,#00
  db #F3,#00,#00,#00,#00,#F3,#00,#45,#CF,#CF,#00,#00,#F3,#45,#00,#45
  db #00,#F3,#00,#45,#CF,#CF,#00,#00
-intro_art15_1:
+intro_art14_1:
  db #00,#00,#00,#00,#00,#00,#00,#30,#30,#30,#30,#00,#10,#B2,#1A,#30
  db #12,#20,#25,#30,#30,#21,#8B,#20,#1A,#30,#30,#30,#30,#30,#30,#60
  db #C1,#C7,#C3,#00,#30,#80,#00,#C3,#82,#00,#20,#8A,#51,#40,#51,#00

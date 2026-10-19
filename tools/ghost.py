@@ -24,8 +24,8 @@ def run(key, seed, frames):
 def addr(x, y): return 0xC000 + ((y >> 3) + 1) * 80 + (y & 7) * 0x800 + 1 + x      # decor decale de 8 lignes : le HUD est en haut
 bad_total = 0
 import itertools
-SEEDS = (1, 2, 3) if '-long' not in sys.argv else range(10, 15)
-FRAMES = (700, 1500) if '-long' not in sys.argv else (2500,)
+SEEDS = (int(os.environ['ONE']),) if os.environ.get('ONE') else (1, 2, 3) if '-long' not in sys.argv else range(10, 15)
+FRAMES = tuple(int(f) for f in os.environ['FR'].split(',')) if os.environ.get('FR') else (700, 1500) if '-long' not in sys.argv else (2500,)
 for key in tuple(int(k) for k in os.environ.get('KEYS', '2,4,6').split(',')):
     for seed in SEEDS:
         for frames in FRAMES:
