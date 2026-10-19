@@ -2,6 +2,9 @@
 
 Jeu d'action en vue de dessus pour **Amstrad CPC 464 / 664 / 6128 (64 Ko)**, MODE 0, 100 % assembleur Z80 ([RASM](https://github.com/EdouardBERGE/rasm)).
 
+Le jeu est compatible avec tous les modèles CPC d'origine, par contre vu la caractéristique de son moteur avec ses accès disques ( limitation 64Ko de RAM ), la version .rom n'est pas actuellement disponible pour les modèles GX4000/CPC+. A envisager par la suite pour profiter de l'upgrade HW du matériel, mais cela nécessitera une refonte complète du jeu.
+
+
 Papi, vétéran en mission commando, traverse des zones remplies de soldats, d'officiers et de généraux, jusqu'au boss final de la Zone 3 : le général Falzar.
 D'autres zones seront proposées et réalisées par la suite.
 A chaques nouvelles mise à jour, un commit sera effectué ! 
