@@ -2,7 +2,8 @@
 
 Jeu d'action en vue de dessus pour **Amstrad CPC 464 / 664 / 6128 (64 Ko)**, MODE 0, 100 % assembleur Z80 ([RASM](https://github.com/EdouardBERGE/rasm)).
 
-Papi, vétéran en mission commando, traverse des zones remplies de soldats, d'officiers et de généraux, jusqu'au boss final : le général Falzar.
+Papi, vétéran en mission commando, traverse des zones remplies de soldats, d'officiers et de généraux, jusqu'au boss final de la Zone 3 : le général Falzar.
+D'autres zones seront proposées et réalisées par la suite.
 
 ## Jouer
 - `dist/PAPICPC_v41g_DIFFUSION.dsk` : version finale. Dans un émulateur (ou sur CPC), `RUN"PAPICPC"`.
