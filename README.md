@@ -4,6 +4,9 @@ Jeu d'action en vue de dessus pour **Amstrad CPC 464 / 664 / 6128 (64 Ko)**, MOD
 
 Papi, vétéran en mission commando, traverse des zones remplies de soldats, d'officiers et de généraux, jusqu'au boss final de la Zone 3 : le général Falzar.
 D'autres zones seront proposées et réalisées par la suite.
+A chaques nouvelles mise à jour, un commit sera effectué ! 
+
+Je rappelle que Claude IA est utilisé pour l'assistance du code z80 du projet, tout le reste est géré et crée par moi-même.
 
 ## Jouer
 - `dist/PAPICPC_v41g_DIFFUSION.dsk` : version finale. Dans un émulateur (ou sur CPC), `RUN"PAPICPC"`.
