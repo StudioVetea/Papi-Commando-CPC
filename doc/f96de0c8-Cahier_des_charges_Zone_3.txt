@@ -1,0 +1,10 @@
+- Nom de la zone : Hidden Headquarter.
+- Intégrer le tileset de la zone Tileset2.png, le fichier de la MAP Zone3.tmx et le tileset d'obstacle TileSet2Obstacles.
+- Nouvelle couleur obstacle à intégrée : le carré rose/Cyan : Considéré comme un obstacle type eau. A animer avec les 3 frames animations 12x8 ( séquence 1 2 3 2 ). Gérer les règles à tous les éléments comme il était prévu lors de nos derniers échanges.
+
+Les missions de la Zone 3 :
+- Mission 1 : Tuer 25 officiers ( 80% officiers - 20% généraux - 6 unités maximum )
+- Mission 2 : Survivre 45 secondes. ( 70% soldats - 30% généraux - 6 unités maximum )
+- Mission 3 : Trouver le z80 ( apparaitra au bout de 20 kills ) ! ( 60% officiers - 40% généraux -  6 unités maximum )
+- Mission 4 :  Tuer 20 généraux. ( 60% officiers - 40% généraux - 7 unités maximum )
+- Mission finale 5 : Tuer Boss Général Falzar ( 100% généraux - 5 unités maximum ) - Attendre que je réalise le Boss avant.
