@@ -256,3 +256,77 @@ m_hud_kills:
             ld a,#51
             ld (expand_glyph.b-1),a
             ret
+
+;------------------------------------------------------------------------------
+; voix numerisee de l'intro (banque 7 aussi) : « Papi Commando CPC ! », echantillons 4 bits (2 par octet, poids fort d'abord) joues
+; sur le canal A du PSG (registre 8 = volume, tons et bruit coupes). Interruptions coupees pendant la lecture (~2,4 s).
+; Entree : m_voice (appelee par la rampe 'voice_play' du demarrage, miroir de la banque 1 non necessaire)
+;------------------------------------------------------------------------------
+VOICE_DATA  equ BOSS_LOAD+#400
+VOICE_END   equ BOSS_LOAD+BOSS_N*512
+VOICE_DELAY equ 35                      ; reglage de la cadence (~6 kHz), mesure a l'emulateur
+m_voice:    di
+            ld bc,#F782                 ; PPI : port A en sortie
+            out (c),c
+            ld a,7                      ; registre 7 (mixer) = tout coupe
+            ld e,#3F
+            call .psg
+            ld a,8                      ; registre 8 (volume A) : reste selectionne, on n'ecrit plus que la valeur
+            ld e,0
+            call .psg
+            ld de,VOICE_DATA
+            ld h,#80
+            ld l,0
+.byte       ld a,(de)
+            rrca
+            rrca
+            rrca
+            rrca
+            and 15
+            ld c,a
+            ld b,#F4
+            out (c),c                   ; donnee du volume sur le port A
+            ld b,#F6
+            out (c),h                   ; ecriture PSG (BDIR = 1)
+            out (c),l                   ; inactif
+            ld a,VOICE_DELAY
+.d1         dec a
+            jr nz,.d1
+            ld a,(de)
+            inc de
+            and 15
+            ld c,a
+            ld b,#F4
+            out (c),c
+            ld b,#F6
+            out (c),h
+            out (c),l
+            ld a,VOICE_DELAY
+.d2         dec a
+            jr nz,.d2
+            ld a,d
+            cp hi(VOICE_END)
+            jr nz,.byte
+            ld c,0                      ; silence
+            ld b,#F4
+            out (c),c
+            ld b,#F6
+            out (c),h
+            out (c),l
+            ret
+.psg        ld b,#F4                    ; A = registre, E = valeur : selection puis ecriture
+            out (c),a
+            ld bc,#F6C0
+            out (c),c
+            ld bc,#F600
+            out (c),c
+            ld b,#F4
+            out (c),e
+            ld bc,#F680
+            out (c),c
+            ld bc,#F600
+            out (c),c
+            ret
+            assert $<=VOICE_DATA
+            ds VOICE_DATA-$
+            incbin '../build/voice.bin'      ; les echantillons (convert.py)

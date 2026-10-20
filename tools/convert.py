@@ -609,7 +609,44 @@ def build_menu():
 
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
-BOSS_N = 2                             # secteurs reserves au code du boss (banque 7)
+VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
+VOICE_OFF = 0x400                      # la voix commence 1 Ko apres le code du boss, dans la banque 7
+def build_voice():
+    """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
+    PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
+    import numpy as np
+    from scipy.io import wavfile
+    from scipy.signal import resample_poly
+    from math import gcd
+    r, x = wavfile.read(os.path.join(ROOT, 'assets', 'PapiCommandoCPC_voix.wav'))
+    x = x.astype(float)
+    if x.ndim > 1: x = x.mean(axis=1)
+    x -= x.mean()
+    g = gcd(VOICE_RATE, r)
+    x = resample_poly(x, VOICE_RATE // g, r // g)
+    x /= abs(x).max()
+    loud = np.nonzero(abs(x) > 0.05)[0]                         # silences de debut et de fin retires
+    x = x[max(loud[0] - 300, 0):loud[-1] + 300]
+    x = np.tanh(2.2 * x) / np.tanh(2.2)                          # compression douce : voix plus forte
+    lv = np.array([0, 0.0137, 0.0205, 0.0291, 0.0423, 0.0618, 0.0847, 0.1369, 0.1691, 0.2647, 0.3527, 0.4499, 0.5704, 0.6873, 0.8482, 1.0])
+    t = x * 0.5 + 0.5                                           # 0..1 autour du niveau median
+    t = t * (lv[15] - lv[0]) + lv[0]
+    q = np.zeros(len(t), int)                                   # quantification avec diffusion d'erreur (niveaux du PSG tres inegaux)
+    e = 0.0
+    for i in range(len(t)):
+        v = t[i] + 0.7 * e
+        q[i] = int(np.abs(lv - v).argmin())
+        e = v - lv[q[i]]
+    n = (len(q) + 1023) // 1024 * 1024                          # multiple de 512 octets
+    q = np.concatenate([q, np.full(n - len(q), np.abs(lv - 0.5).argmin())])
+    packed = bytes(int(a) << 4 | int(b) for a, b in zip(q[0::2], q[1::2]))
+    open(os.path.join(BUILD, 'voice.bin'), 'wb').write(packed)
+    print('voix : %d echantillons (%.2f s), %d octets' % (len(q), len(q) / VOICE_RATE, len(packed)))
+    global VOICE_FR
+    VOICE_FR = len(q) * 50 // VOICE_RATE
+    return len(packed)
+os.makedirs(os.path.join(ROOT, 'build'), exist_ok=True)
+BOSS_N = (VOICE_OFF + build_voice()) // 512      # secteurs de la banque 7 : code du boss + voix
 def build_hof(title_rows):
     """src/hof_gfx.asm : titre (bandeau), police 3 x 5 (ASCII 32..95, 5 octets : bits 7..5), cercles rouges de selection"""
     red = enc(2, 2)
@@ -870,7 +907,7 @@ def main():
         f.write('NZONES       equ %d\nZSTAGE       equ #%04X\n' % (len(ZONES), ZSTAGE))
         f.write('Z_SPAWN      equ %d\nZ_TILEMAP    equ %d\nZ_TKIND      equ %d\nZ_FRAMES     equ %d\nZ_TILES      equ %d\nZ_SPR        equ %d\n' % (Z_SPAWN, Z_TILEMAP, Z_TKIND, Z_FRAMES, Z_TILES, Z_SPR))
         f.write('TILE_BASE    equ #%04X\nZSPR_DST     equ #%04X\nZSPR_C       equ %d\nWHITE        equ #%02X\n' % (slot_addr(SLOT0_ZONE - 1), slot_addr(SLOT0_ZONE), SPRSLOT - SLOT0_ZONE % SPRSLOT, enc(13, 13)))
-        f.write('MENU_TRK     equ %d\nMENU_N       equ %d\nMENU_LOAD    equ #%04X\nINTRO_TRK    equ %d\nINTRO_N      equ %d\nINTRO_LOAD   equ #%04X\nGO_TRK       equ %d\nGO_N         equ %d\nGO_LOAD      equ #5400\nHOF_TRK      equ %d\nHOF_N        equ %d\nHOF_LOAD     equ #4000\nBOSS_TRK     equ %d\nBOSS_N       equ %d\nBOSS_LOAD    equ #4000\n' % (menu_trk, MENU_N, MENU_LOAD, intro_trk, INTRO_N, INTRO_LOAD, gover_trk, GO_N, hof_trk, HOF_N, boss_trk, BOSS_N))
+        f.write('MENU_TRK     equ %d\nMENU_N       equ %d\nMENU_LOAD    equ #%04X\nINTRO_TRK    equ %d\nINTRO_N      equ %d\nINTRO_LOAD   equ #%04X\nGO_TRK       equ %d\nGO_N         equ %d\nGO_LOAD      equ #5400\nHOF_TRK      equ %d\nHOF_N        equ %d\nHOF_LOAD     equ #4000\nBOSS_TRK     equ %d\nBOSS_N       equ %d\nBOSS_LOAD    equ #4000\nVOICE_FR     equ %d\n' % (menu_trk, MENU_N, MENU_LOAD, intro_trk, INTRO_N, INTRO_LOAD, gover_trk, GO_N, hof_trk, HOF_N, boss_trk, BOSS_N, VOICE_FR))
         f.write('XSLOT_BASE   equ #%04X\nNXS          equ %d\nZ_ICON       equ %d\n' % (XSLOT_BASE, NXS, Z_ICON))
         f.write('tiles        equ ZSTAGE+Z_TILES\ntilemap      equ ZSTAGE+Z_TILEMAP\ntkind        equ ZSTAGE+Z_TKIND\n')
     with open(os.path.join(ROOT, 'src', 'zones.inc'), 'w') as f:
