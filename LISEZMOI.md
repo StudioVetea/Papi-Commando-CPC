@@ -914,3 +914,8 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - `big_buf` / `glyph_buf` sont deplaces en memoire permanente (ils chevauchaient le code d'eau en #31E2). `spr_eclat` est aussi en permanent.
 - Marge de code permanent : ~150 octets (de quoi demarrer la zone 4 ; la banque 7 est extensible).
 - Regression anti-fantomes (zones 0, 3, 4, 9, 14) : 0 octet fantome ; un « octet faux » isole en zone 4 (graine 3, image 1500) : l'ecran egale le fond, artefact du controleur (meme famille que le cas v43).
+
+### v45 : correctif de l'eclat des balles (glitch signale apres la v44)
+- **Cause** : dans la routine d'eclat, `rra` reprenait la retenue laissee par l'instruction precedente dans le bit 7 du numero d'image : l'eclat n'atteignait jamais son image 3 (fin) et restait affiche indefiniment, avec un numero d'image au hasard (donc des octets quelconques de la memoire dessines a l'ecran = glitch anime). Remplace par `srl a`.
+- **Balle cachee derriere un ennemi** quand elle atteint sa portee : elle disparait (elle continuait de voler, hors portee, jusqu'au bord de l'ecran).
+- Verification : script de suivi des 10 balles image par image (zones 0, 1, 2, 3, 4, 1200-1500 images) : plus aucun eclat bloque, plus aucune balle au-dela de sa portee ; ghost.py : 0 octet fantome.

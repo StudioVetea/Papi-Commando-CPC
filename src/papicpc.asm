@@ -1620,18 +1620,21 @@ bullets_update:
 .mine       call bullet_vs_enemies
 .hit        call wake_enemies           ; ceux qui sont venus se placer sous l'ancienne position se redessinent
             call bullet_erase
-            ld a,(bul_hide)
-            or a
-            jr nz,.next
             ld a,(ix+B_ON)
             dec a
             jr nz,.next
-            ld a,(ix+B_AGE)             ; au bout de sa portee : la balle eclate
+            ld a,(ix+B_AGE)             ; au bout de sa portee : la balle eclate (cachee derriere un ennemi : elle disparait)
             cp (ix+B_RNG)
-            jr c,.draw
+            jr c,.inr
+            ld a,(bul_hide)
+            or a
+            jp nz,.kill
             ld (ix+B_ON),3
             ld (ix+B_AGE),0
             jr .next
+.inr        ld a,(bul_hide)
+            or a
+            jr nz,.next
 .draw       ld b,(ix+B_X)
             ld c,(ix+B_Y)
             ld (ix+B_OX),b
@@ -1643,12 +1646,12 @@ bullets_update:
             jr z,.kill
             ld a,(ix+B_AGE)             ; eclat : 3 images de 2 pas d'affichage (B_AGE = 0..6)
             inc (ix+B_AGE)
-            rra
+            srl a
             jr c,.next
             call wake_enemies           ; (l'image precedente s'efface, les ennemis dessous se redessinent)
             call eclat_erase
             ld a,(ix+B_AGE)
-            rra
+            srl a                       ; (rra ramenait la retenue dans le bit 7 : image 3 jamais atteinte, eclat figé, image au hasard)
             cp 3
             jr z,.kill
             ld e,a
