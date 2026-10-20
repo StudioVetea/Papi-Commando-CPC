@@ -36,7 +36,7 @@ COLTAB      equ #3200           ; x octet -> colonne de tuile (x/6)
 MOD6        equ #3300           ; x octet -> x mod 6
 OCCY        equ #3400           ; y -> un mur "devant" peut-il cacher un sprite ici ?
 QUEUE       equ #3500           ; file de l'inondation (2 x 312 octets)
-bullets     equ #308C           ; table des balles (100 octets) : zone #3000-#31FF (ancien bloc de sprites de demarrage, libre une fois copie)
+bullets     equ #308C           ; table des balles (110 octets) : zone #3000-#31FF (ancien bloc de sprites de demarrage, libre une fois copie)
 FIRE_LAST   equ #3060           ; derniere image de tir de chaque ennemi (12 octets) : trou apres le 1er champ de distances
 GRENADE_HOLD equ 25             ; appui long sur tir = grenade : 25 images = 0,5 s (35 = 0,7 s en v12, 75 = 1,5 s en v11) ; a regler apres essais
             include 'layout.inc'        ; pistes de la cover et de la zone, zone de preparation (genere par tools/convert.py)
@@ -90,7 +90,7 @@ NEAR        equ 5               ; a moins de 5 cases de Papi un ennemi s'arrete 
 TICK_STOP   equ 5               ; on ne commence plus un ennemi apres 16,8 ms d'image
 ESIZE       equ 16
 NBUL        equ 10              ; 0-3 : Papi, 4-9 : ennemis
-BSIZE       equ 10
+BSIZE       equ 11
 XMAX        equ 72              ; 78 - 6
 YMAX        equ 180             ; 192 - 12
 PAPI_Y0     equ 180             ; Papi apparait tout en bas de la carte...
@@ -119,7 +119,7 @@ E_FX        equ 14              ; restes de vitesse (virgule fixe)
 E_FY        equ 15
 
 ; --- fiche balle (IX) ---
-B_ON        equ 0               ; 0 libre, 1 en vol, 2 a effacer
+B_ON        equ 0               ; 0 libre, 1 en vol, 2 a effacer, 3 eclat de fin de portee
 B_X         equ 1
 B_Y         equ 2
 B_OX        equ 3
@@ -127,7 +127,9 @@ B_OY        equ 4
 B_DX        equ 5
 B_DY        equ 6
 B_PASS      equ 9               ; pas restants pendant lesquels la balle traverse les murs rouges (tireur colle a son obstacle)
-B_AGE       equ 8               ; balles ennemies : nombre de pas faits (une balle toute jeune n'est jamais cachee)
+B_AGE       equ 8               ; nombre de pas faits (balles ennemies : une balle toute jeune n'est jamais cachee) ; eclat (etat 3) : image 0..6
+B_RNG       equ 10              ; portee : nombre de pas au bout desquels la balle eclate (voir rng_tab)
+shot_cls    equ #30FA           ; classe de portee du tireur de la balle qui part (0 Papi, 1 soldat, 2 officier, 3 general, 4 boss, 5 vehicule)
 PBUL_SPEED  equ 179             ; balles de Papi : 179/256 = 70 % des images (100 % avant), pas inchange
 PSPEED_X    equ 90              ; Papi : cumul horizontal 90/256 = 0,35 octet par image (17,5 octets/s ; 25 avant)
 PSPEED_Y    equ 179             ; Papi : cumul vertical 179/256 = 0,7 ligne par image (35 lignes/s ; 50 avant)
@@ -1350,7 +1352,7 @@ player_dying:
             jr z,.gameover
             xor a
             ld (p_state),a              ; Papi reapparait la ou il est mort (p_x, p_y, p_dir inchanges)
-            ld a,75                     ; invincibilite apres une mort : 75 images = 1,5 s
+            ld a,100                    ; invincibilite apres une mort : 100 images = 2 s
             ld (p_inv),a
             ret
 .gameover   call check_hi               ; meilleur score (le HUD le redessine)
@@ -1400,7 +1402,9 @@ player_fire:
             add ix,de
             djnz .find
             ret
-.free       ld a,(p_dir)
+.free       xor a                       ; classe de portee 0 : Papi
+            ld (shot_cls),a
+            ld a,(p_dir)
             ld hl,(p_y)                 ; L = y, H = x
             push af
             push hl
@@ -1449,10 +1453,26 @@ bullet_start:
             ld (ix+B_ACC),a
             ld (ix+B_AGE),a
             ld (ix+B_PASS),a
+            ld a,(shot_cls)             ; portee : pas de la classe du tireur, horizontal ou autre (rng_tab : 2 octets par classe)
+            add a,a
+            ld e,a
+            ld d,0
+            ld hl,rng_tab
+            add hl,de
+            ld a,(ix+B_DY)
+            or a
+            jr z,.rh
+            inc hl
+.rh         ld a,(hl)
+            ld (ix+B_RNG),a
             ld (ix+B_ON),1
             ret
 .out        or 1
             ret
+
+; portee des balles, en pas (une balle de Papi fait 4 px de large / 6 de haut par pas, celles des ennemis la moitie) :
+; Papi 90 px, soldat 80, officier 90, general 100, boss 110, vehicule infinie.  Par classe : pas horizontaux, pas verticaux ou diagonaux
+rng_tab:    db 22,15, 40,27, 45,30, 50,33, 55,37, 255,255
 
 ; tir en couverture de Papi : A = direction, H = x, L = y du tireur, IX = balle qui vient de partir.
 ; Si la case JUSTE a cote de son corps, dans la direction du tir, est un mur rouge (il est colle a l'obstacle),
@@ -1518,7 +1538,7 @@ bullets_update:
             or a
             jp z,.next
             dec a
-            jp nz,.kill                 ; 2 = touchee, a effacer
+            jp nz,.k2                   ; 2 = touchee, a effacer ; 3 = eclat
             ld a,(bul_n)
             cp 4
             ld a,EBUL_SPEED             ; balles ennemies : 60 % des images, d'un pas moitie moins long
@@ -1527,11 +1547,8 @@ bullets_update:
 .sp         add a,(ix+B_ACC)
             ld (ix+B_ACC),a
             jp nc,.next
-            ld a,(bul_n)
-            cp 4
-            jr c,.go
-            inc (ix+B_AGE)              ; age d'une balle ennemie, en pas
-.go         ld a,(ix+B_X)
+            inc (ix+B_AGE)              ; age de la balle, en pas
+            ld a,(ix+B_X)
             add a,(ix+B_DX)
             cp 78
             jp nc,.kill
@@ -1568,10 +1585,10 @@ bullets_update:
 .ck         bit 1,a                     ; decor qui arrete les balles...
             jr z,.nowall
             bit 2,a                     ; une caserne arrete TOUTES les balles (meme celle d'un tireur a couvert)
-            jr nz,.kill
+            jp nz,.kill
             ld a,(ix+B_PASS)            ; ...sauf pour un tireur colle a son obstacle : sa balle le traverse
             or a
-            jr z,.kill
+            jp z,.kill
             jr .np                      ; (dans le mur, la fenetre reste ouverte : un obstacle epais est traverse en entier)
 .nowall     ld a,(ix+B_PASS)
             or a
@@ -1609,12 +1626,48 @@ bullets_update:
             ld a,(ix+B_ON)
             dec a
             jr nz,.next
-            ld b,(ix+B_X)
+            ld a,(ix+B_AGE)             ; au bout de sa portee : la balle eclate
+            cp (ix+B_RNG)
+            jr c,.draw
+            ld (ix+B_ON),3
+            ld (ix+B_AGE),0
+            jr .next
+.draw       ld b,(ix+B_X)
             ld c,(ix+B_Y)
             ld (ix+B_OX),b
             ld (ix+B_OY),c
             call scr_addr
             call draw_bullet
+            jr .next
+.k2         dec a
+            jr z,.kill
+            ld a,(ix+B_AGE)             ; eclat : 3 images de 2 pas d'affichage (B_AGE = 0..6)
+            inc (ix+B_AGE)
+            rra
+            jr c,.next
+            call wake_enemies           ; (l'image precedente s'efface, les ennemis dessous se redessinent)
+            call eclat_erase
+            ld a,(ix+B_AGE)
+            rra
+            cp 3
+            jr z,.kill
+            ld e,a
+            add a,a
+            add a,e
+            add a,a
+            add a,a
+            add a,a                     ; x 24
+            ld e,a
+            ld d,0
+            ld hl,spr_eclat
+            add hl,de
+            ex de,hl
+            ld b,(ix+B_X)
+            ld c,(ix+B_Y)
+            ld (ix+B_OX),b
+            ld (ix+B_OY),c
+            call scr_addr
+            call draw_gdat
             jr .next
 .kill       call wake_enemies           ; l'effacement peut abimer un sprite (le tireur, ou un ennemi arrive depuis)
             call bullet_erase
@@ -1670,6 +1723,17 @@ wake_rect:
             dec h
             jr nz,.w
             ret
+
+eclat_erase:                            ; efface les 2 octets de l'eclat IX
+            ld a,(ix+B_OX)
+            inc a
+            ret z
+            dec a
+            ld b,a
+            ld c,(ix+B_OY)
+            ld (ix+B_OX),#FF
+            ld de,#0206                 ; 2 octets x 6 lignes
+            jp restore_xy
 
 bullet_erase:
             ld a,(ix+B_OX)
@@ -2915,6 +2979,16 @@ enemy_shoot:
             ld a,(p_state)
             or a
             ret nz
+            call fire_ptr               ; classe de portee du tireur : bits 4-6 de sa fiche 'gren'
+            ld hl,slot_gren
+            add hl,de
+            ld a,(hl)
+            rrca
+            rrca
+            rrca
+            rrca
+            and 7
+            ld (shot_cls),a
             ld d,(ix+E_X)
             ld e,(ix+E_Y)
             ld h,(ix+E_DIR)             ; la balle part dans la direction de l'ennemi : celle de sa marche, ou vers Papi quand il s'est arrete
@@ -3213,7 +3287,7 @@ draw_gren:
             ld bc,spr_grenade
             add hl,bc
             ex de,hl
-            ld b,6
+draw_gdat:  ld b,6                      ; DE = image 2 x 6 (masque, valeur), HL = adresse ecran
 .gl         push hl
             ld c,2
 .gb         ld a,(de)
@@ -4696,7 +4770,9 @@ ovl_hof:    ld a,CFG_HOF
             jp ovl_go
 
 big_on:     db 0                        ; octet "allume" des gros caracteres (2 pixels du meme stylo)
-big_buf     equ #30F0                   ; (4 octets : trou libre de #3000-#31FF, hors du programme)
+big_buf:    ds 4                        ; (4 octets)
+glyph_buf   equ big_buf+4               ; caractere depaquete (expand_glyph) : 10 octets
+            ds 10
 
 ; HL = texte, B = x (octet), C = y, (big_on) = octet allume.  Caracteres doubles : 4 octets x 10 lignes
 print_big:
@@ -5143,7 +5219,6 @@ HOF_E0      equ #8750
 HOF_MAG1    equ #875F                   ; octets magiques : table creee (par le menu, hof_init)
 HOF_MAG2    equ #8F5F
 HOF_MODE    equ #975F                   ; 0 = classement qui defile, 1 = saisie du nom (lu par l'overlay HOF)
-glyph_buf   equ #30F4                   ; caractere depaquete (expand_glyph) : 10 octets, trou libre de #3000-#31FF
 
 ; VARIABLES de la partie (remises a zero a chaque nouvelle partie) : en memoire basse, #0040-#01B0, libre (la pile, sous #0200,
 ; ne descend pas sous #01E0). Ce ne sont plus des octets du fichier : adresses calculees par equ.
@@ -5429,6 +5504,8 @@ ovlb_tab:   db CFG_MENU,MENU_TRK
             dw GO_N,GO_LOAD
             db CFG_HOF,HOF_TRK
             dw HOF_N,HOF_LOAD
+            db CFG_BOSS,BOSS_TRK
+            dw BOSS_N,BOSS_LOAD
 ovlb_tab_end:
 ovlb_end:
             assert ovlb_end-ovlb_src<=#E0
@@ -5611,3 +5688,13 @@ hof_stop:
             assert hof_stop-hof_start<=HOF_N*512
             assert hof_stop<=CANVAS
             save 'build/hof.bin',#E000,hof_stop-hof_start
+
+;------------------------------------------------------------------------------
+; code du boss (banque 7) : assemble pour #4000, range en #F800 : build/boss.bin
+;------------------------------------------------------------------------------
+            org BOSS_LOAD,#F800
+boss_start:
+            include 'boss_mod.asm'
+boss_stop:
+            assert boss_stop-boss_start<=BOSS_N*512
+            save 'build/boss.bin',#F800,boss_stop-boss_start

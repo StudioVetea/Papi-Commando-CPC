@@ -24,6 +24,26 @@ spr_grenade:           ; 3 images 2x6
  db #00,#00,#00,#00
  db #AA,#00,#55,#00
 
+spr_eclat:             ; eclat d une balle en fin de portee : 3 images 2x6
+ db #FF,#00,#FF,#00
+ db #FF,#00,#FF,#00
+ db #AA,#51,#FF,#00
+ db #FF,#00,#55,#A2
+ db #FF,#00,#FF,#00
+ db #FF,#00,#FF,#00
+ db #FF,#00,#FF,#00
+ db #55,#A2,#AA,#51
+ db #FF,#00,#FF,#00
+ db #FF,#00,#FF,#00
+ db #55,#A2,#AA,#51
+ db #FF,#00,#FF,#00
+ db #55,#A2,#AA,#51
+ db #FF,#00,#FF,#00
+ db #FF,#00,#FF,#00
+ db #FF,#00,#FF,#00
+ db #FF,#00,#FF,#00
+ db #55,#A2,#AA,#51
+
 spr_balle:             ; 1 image 1x6
  db #00,#CF
  db #00,#CF

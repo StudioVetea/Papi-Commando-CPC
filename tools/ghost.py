@@ -42,8 +42,8 @@ for key in tuple(int(k) for k in os.environ.get('KEYS', '2,4,6').split(',')):
                 b = sym['ENEMIES'] + e * 16
                 if m[b + 3] != 0xFF: rect(m[b + 3], m[b + 4], 6, 12)
             for k in range(10):
-                b = sym['BULLETS'] + k * 10
-                if m[b + 3] != 0xFF: rect(m[b + 3], m[b + 4], 1, 6)
+                b = sym["BULLETS"] + k * 11
+                if m[b + 3] != 0xFF: rect(m[b + 3], m[b + 4], 2 if m[b] == 3 else 1, 6)      # etat 3 : eclat (2 octets)
             if m[sym['CRATE_ST']] in (1, 2) and m[sym['CRATE_OX']] != 0xFF: rect(m[sym['CRATE_OX']], m[sym['CRATE_OY']], 6, 12)   # caisse de grenades
             if m[sym['G_OX']] != 0xFF: rect(m[sym['G_OX']], m[sym['G_OY']], 2, 6)                       # grenade
             if m[sym['EG_OX']] != 0xFF: rect(m[sym['EG_OX']], m[sym['EG_OY']], 2, 6)                       # grenade ennemie
@@ -59,8 +59,8 @@ for key in tuple(int(k) for k in os.environ.get('KEYS', '2,4,6').split(',')):
                 b = sym['ENEMIES'] + e * 16
                 if m[b + 3] != 0xFF: rects.append((m[b + 3], m[b + 4], 6, 12, m[b + 9], e))
             for k in range(10):
-                b = sym['BULLETS'] + k * 10
-                if m[b + 3] != 0xFF: rects.append((m[b + 3], m[b + 4], 1, 6, None))
+                b = sym["BULLETS"] + k * 11
+                if m[b + 3] != 0xFF: rects.append((m[b + 3], m[b + 4], 2 if m[b] == 3 else 1, 6, None))
             if m[sym['CRATE_ST']] in (1, 2) and m[sym['CRATE_OX']] != 0xFF: rects.append((m[sym['CRATE_OX']], m[sym['CRATE_OY']], 6, 12, None))
             if m[sym['G_OX']] != 0xFF: rects.append((m[sym['G_OX']], m[sym['G_OY']], 2, 6, None))
             if m[sym['EG_OX']] != 0xFF: rects.append((m[sym['EG_OX']], m[sym['EG_OY']], 2, 6, None))

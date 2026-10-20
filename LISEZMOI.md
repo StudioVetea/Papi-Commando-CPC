@@ -904,3 +904,13 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - Marge de code permanent : 31 octets en diffusion, 10 en test. La place pour la zone 4 viendra des modules en banque 7 (code des boss deplace derriere des trampolines), pas du noyau.
 - Scripts de test : le menu etant pret plus tot, la touche de depart est suivie de 30 images avant de poker la zone.
 - Regression anti-fantomes (zones 0, 1, 3, 9, 10, 14) : 0 octet fantome ; 5 « octets faux » constants en zone 14 (boss Falzar, ligne 0 d'un sprite en chevauchement tete/corps) : artefact probable du controleur, a surveiller.
+
+### v44 : cahier des charges du 20 octobre 2026 (portee des balles, eclat, invincibilite)
+- **Invincibilite apres une mort : 2 s** (100 images).
+- **Portee des balles** (en pixels) : Papi 90, Soldat 80, Officier 90, General 100, Boss zones 1 a 3 110, vehicules de combat infinie (classe 5, pour la zone 4). Table `rng_tab` (pas horizontal / vertical, en nombre de pas : Papi avance de 4 px en X et 6 px en Y, les ennemis de moitie moins vite). L'enregistrement de balle passe a **BSIZE = 11** : nouvel octet `B_RNG` (portee en pas) ; `B_AGE` compte les pas de toutes les balles.
+- **Classe de portee** : `shot_cls` (#30FA) est positionnee avant `bullet_start` : 0 Papi, sinon bits 4-6 de `slot_gren` (renseignes par convert.py, champ `cls` de UNITS : soldat 1, officier 2, general 3, boss 4). Les bits 0-2 de `slot_gren` ne changent pas.
+- **Eclat** : arrive a sa portee, la balle passe a l'etat 3 et affiche `EclatBalle_4x6.png` (3 images 2x6 octets, `spr_eclat`) en 3 images a 2 images d'ecran chacune (~6 images en tout), puis s'efface (`eclat_erase`). Mesure : balle de Papi vers le haut : 15 pas = 90 px, puis eclat.
+- **Code du boss deplace en banque 7** (`boss_mod.asm`, 1 secteur, piste 35, charge au boot par OVLB). La memoire permanente ne garde que des rampes (`boss.asm` : boss_tick, bk_head, bk_absent...) et des sorties `bk_to_next / bk_to_absent2 / bk_to_draw`. **Regle** : le code execute dans la fenetre #4000 ne change jamais la banque lui-meme (le processeur lirait la suite dans l'autre banque) ; la banque 1 (miroir) est restauree par du code permanent. Le code de la banque 7 ne dessine jamais.
+- `big_buf` / `glyph_buf` sont deplaces en memoire permanente (ils chevauchaient le code d'eau en #31E2). `spr_eclat` est aussi en permanent.
+- Marge de code permanent : ~150 octets (de quoi demarrer la zone 4 ; la banque 7 est extensible).
+- Regression anti-fantomes (zones 0, 3, 4, 9, 14) : 0 octet fantome ; un « octet faux » isole en zone 4 (graine 3, image 1500) : l'ecran egale le fond, artefact du controleur (meme famille que le cas v43).

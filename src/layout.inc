@@ -27,6 +27,9 @@ GO_LOAD      equ #5400
 HOF_TRK      equ 33
 HOF_N        equ 10
 HOF_LOAD     equ #4000
+BOSS_TRK     equ 35
+BOSS_N       equ 2
+BOSS_LOAD    equ #4000
 XSLOT_BASE   equ #2C10
 NXS          equ 7
 Z_ICON       equ 128

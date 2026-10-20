@@ -19,5 +19,5 @@ for name, e in lay.items():
     fn = 'cover.bin' if name == 'cover' else name + '.bin'
     data = open(os.path.join(ROOT, 'build', fn), 'rb').read()
     put(e['track'], data, e.get('sector', 0))
-    print('disquette : %-6s piste %2d, %2d secteurs' % (name, e['track'], len(data) // 512))
+    print('disquette : %-6s piste %2d, %2d secteurs' % (name, e['track'], -(-len(data) // 512)))
 open(path, 'wb').write(d)

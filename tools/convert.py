@@ -218,13 +218,13 @@ Z_SPR = Z_TILES + 40 * 48             # 2648 : les tuiles occupent toujours 40 e
 #   fire : images entre deux tirs (multiples de 16 : l'ennemi reflechit toutes les 16 images, et 8 bits) ; hp : points de vie ;
 #   pts : points / 10 ; spd : decalage dans les tables de vitesse (0 normal, 32 rapide) ; gren : lance des grenades
 UNITS = {
-    1: dict(name='soldat',   sheet='SoldatC++_12x12.png',  fire=240, hp=1, pts=1, spd=0,  gren=0),
-    2: dict(name='officier', sheet='OfficierC___12x12.png', fire=144, hp=2, pts=2, spd=0,  gren=1),
-    3: dict(name='general',  sheet='GeneralC___12x12.png', fire=80,  hp=3, pts=5, spd=32, gren=0),
+    1: dict(name='soldat',   sheet='SoldatC++_12x12.png',  fire=240, hp=1, pts=1, spd=0,  gren=0, cls=1),
+    2: dict(name='officier', sheet='OfficierC___12x12.png', fire=144, hp=2, pts=2, spd=0,  gren=1, cls=2),
+    3: dict(name='general',  sheet='GeneralC___12x12.png', fire=80,  hp=3, pts=5, spd=32, gren=0, cls=3),
     # BOSS (12 x 24) : deux places d'ennemi empilees. 4 = le corps (pieds : c'est lui qui reflechit, marche et tire), 5 = la tete,
     # collee au-dessus (12 lignes plus haut). La planche fait 12 x 24 par image ; les 4 images de mort sont des explosions.
-    4: dict(name='boss_corps', sheet='BossCaporal_12x24.png', half=1, fire=96, hp=30, pts=20, spd=0, gren=0),
-    5: dict(name='boss_tete',  sheet='BossCaporal_12x24.png', half=0, fire=240, hp=30, pts=0, spd=0, gren=0),
+    4: dict(name='boss_corps', sheet='BossCaporal_12x24.png', half=1, fire=96, hp=30, pts=20, spd=0, gren=0, cls=4),
+    5: dict(name='boss_tete',  sheet='BossCaporal_12x24.png', half=0, fire=240, hp=30, pts=0, spd=0, gren=0, cls=4),
 }
 # apparition des ennemis : (colonne de tuile, y en lignes). Zone d'essai : haut au milieu (y = 0), haut des cotes a 3 rangees
 # du bord (y = 20), puis beaucoup plus bas de chaque cote mais bien au-dessus de Papi (y = 108)
@@ -514,7 +514,7 @@ def build_zone(z):
     def arr(k, f):
         for s_ in range(12): hdr[16 + 12 * k + s_] = f(uk(ext[s_]))
     arr(0, lambda u: 0); [hdr.__setitem__(16 + s_, (0 if (boss and ext[s_] == 3) else ext[s_] - 1)) for s_ in range(12)]                   # type 0..4
-    arr(1, lambda u: u['spd']); arr(2, lambda u: u['fire']); arr(3, lambda u: u['pts']); arr(4, lambda u: u['hp']); arr(5, lambda u: u['gren'])
+    arr(1, lambda u: u['spd']); arr(2, lambda u: u['fire']); arr(3, lambda u: u['pts']); arr(4, lambda u: u['hp']); arr(5, lambda u: u['gren'] | (u['cls'] << 4))
     # bit 2 de la fiche : cette place compte pour le quota (les types a abattre) ; Time Attack : aucune
     for s_ in range(12): hdr[16 + 12 * 5 + s_] |= 4 if (not z.get('time') and ext[s_] in z['count']) else 0
     # tir en couverture : une part des unites (officiers compris), reparties dans la liste ; bit 1 de la fiche 'gren'
@@ -609,6 +609,7 @@ def build_menu():
 
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
+BOSS_N = 2                             # secteurs reserves au code du boss (banque 7)
 def build_hof(title_rows):
     """src/hof_gfx.asm : titre (bandeau), police 3 x 5 (ASCII 32..95, 5 octets : bits 7..5), cercles rouges de selection"""
     red = enc(2, 2)
@@ -759,13 +760,15 @@ def main():
     INTRO_N = intro_sectors()
     os.makedirs(BUILD, exist_ok=True)
     papi = load('PapiCPC_12x12.png'); expl = load('Explosion12x12.png')
-    gren = load('Grenade_4x6.png'); ball = load('Balle2x6.png')
+    gren = load('Grenade_4x6.png'); ball = load('Balle2x6.png'); ecl = load('EclatBalle_4x6.png')
     with open(OUT, 'w') as f:
         f.write('; --- genere par tools/convert.py : ne pas modifier a la main ---\n\n')
         f.write('palette_hw:            ; 16 encres + bordure (numeros materiels)\n')
         db(f, [HW[p] for p in PENS] + [HW[0]])
         f.write('\nspr_grenade:           ; 3 images 2x6\n')
         for fr in range(3): db(f, masked(gren, fr * 4, 0, 4, 6), 4)
+        f.write('\nspr_eclat:             ; eclat d une balle en fin de portee : 3 images 2x6\n')
+        for fr in range(3): db(f, masked(ecl, fr * 4, 0, 4, 6), 4)
         f.write('\nspr_balle:             ; 1 image 1x6\n')
         db(f, masked(ball, 0, 0, 2, 6), 2)
         f.write('\nfont:                  ; glyphes 3x5 compactes : 2 octets (poids faible d abord) = 15 bits, ligne du haut en tete, ordre "%s"\n' % FONT_ORDER)
@@ -845,6 +848,9 @@ def main():
     trk += (GO_N + 8) // 9
     layout['hof'] = dict(track=trk, data=HOF_N * 512)           # overlay du Hall of Fame : build/hof.bin
     hof_trk = trk
+    trk += (HOF_N + 8) // 9
+    layout['boss'] = dict(track=trk, data=BOSS_N * 512)         # code du boss (banque 7) : build/boss.bin
+    boss_trk = trk
     json.dump(layout, open(os.path.join(BUILD, 'layout.json'), 'w'))
     build_menu()
     fr, dl, cp = mkmusic.build(os.path.join(ROOT, 'src', 'menu_music.asm'))
@@ -864,7 +870,7 @@ def main():
         f.write('NZONES       equ %d\nZSTAGE       equ #%04X\n' % (len(ZONES), ZSTAGE))
         f.write('Z_SPAWN      equ %d\nZ_TILEMAP    equ %d\nZ_TKIND      equ %d\nZ_FRAMES     equ %d\nZ_TILES      equ %d\nZ_SPR        equ %d\n' % (Z_SPAWN, Z_TILEMAP, Z_TKIND, Z_FRAMES, Z_TILES, Z_SPR))
         f.write('TILE_BASE    equ #%04X\nZSPR_DST     equ #%04X\nZSPR_C       equ %d\nWHITE        equ #%02X\n' % (slot_addr(SLOT0_ZONE - 1), slot_addr(SLOT0_ZONE), SPRSLOT - SLOT0_ZONE % SPRSLOT, enc(13, 13)))
-        f.write('MENU_TRK     equ %d\nMENU_N       equ %d\nMENU_LOAD    equ #%04X\nINTRO_TRK    equ %d\nINTRO_N      equ %d\nINTRO_LOAD   equ #%04X\nGO_TRK       equ %d\nGO_N         equ %d\nGO_LOAD      equ #5400\nHOF_TRK      equ %d\nHOF_N        equ %d\nHOF_LOAD     equ #4000\n' % (menu_trk, MENU_N, MENU_LOAD, intro_trk, INTRO_N, INTRO_LOAD, gover_trk, GO_N, hof_trk, HOF_N))
+        f.write('MENU_TRK     equ %d\nMENU_N       equ %d\nMENU_LOAD    equ #%04X\nINTRO_TRK    equ %d\nINTRO_N      equ %d\nINTRO_LOAD   equ #%04X\nGO_TRK       equ %d\nGO_N         equ %d\nGO_LOAD      equ #5400\nHOF_TRK      equ %d\nHOF_N        equ %d\nHOF_LOAD     equ #4000\nBOSS_TRK     equ %d\nBOSS_N       equ %d\nBOSS_LOAD    equ #4000\n' % (menu_trk, MENU_N, MENU_LOAD, intro_trk, INTRO_N, INTRO_LOAD, gover_trk, GO_N, hof_trk, HOF_N, boss_trk, BOSS_N))
         f.write('XSLOT_BASE   equ #%04X\nNXS          equ %d\nZ_ICON       equ %d\n' % (XSLOT_BASE, NXS, Z_ICON))
         f.write('tiles        equ ZSTAGE+Z_TILES\ntilemap      equ ZSTAGE+Z_TILEMAP\ntkind        equ ZSTAGE+Z_TKIND\n')
     with open(os.path.join(ROOT, 'src', 'zones.inc'), 'w') as f:

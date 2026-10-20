@@ -4,7 +4,7 @@ zone_dir:
  dw #55A0
  db 0
  db 12,7,7
- dw #55A6
+ dw #55A2
  db 0
  db 13,5,7
  dw #559E
@@ -13,35 +13,35 @@ zone_dir:
  dw #55FC
  db 0
  db 15,1,11
- dw #66BF
+ dw #66BC
  db 0
  db 16,3,8
- dw #6283
+ dw #6281
  db 0
  db 17,2,8
- dw #6289
+ dw #6286
  db 0
  db 18,1,8
- dw #6282
+ dw #6280
  db 0
  db 19,0,9
  dw #62DB
  db 0
  db 20,0,12
- dw #6607
+ dw #6603
  db 0
  db 21,3,10
  dw #604C
  db 0
  db 22,4,10
- dw #6073
+ dw #6070
  db 0
  db 23,5,10
  dw #609E
  db 0
  db 24,6,10
- dw #6041
+ dw #6040
  db 0
  db 25,7,13
- dw #6160
+ dw #615D
  db 0
