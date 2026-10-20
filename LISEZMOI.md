@@ -934,3 +934,9 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Appel** : depuis `boot`, juste apres la lecture des overlays, par `ovlb_voice` (dans le bloc OVLB, #3000 : le code qui change la banque ne peut pas etre dans la fenetre #4000, et `boot` y est). La cover reste affichee 5 s au total (250 images moins `VOICE_FR` = 119).
 - **Banque 7** : `BOSS_N` passe de 2 a 14 secteurs (calcule par convert.py) ; son code est assemble en #8000 physique (un bloc de 8 Ko ne tenait plus en #F800). Aucun octet de code permanent ajoute (PERM_END #2B7B).
 - Pour changer la voix : remplacer le WAV (jusqu'a ~2,6 s au total) et reconstruire. `VOICE_RATE` (6 kHz) regle taille/qualite.
+
+### v49 : sprites de Papi abimes par le code de l'eau (direction gauche, et diagonale bas-gauche)
+- **Cause** : `spr_papi` (les images de Papi et des explosions, source de la copie vers #8000/#8800/#9000) est assemble en #3000-#4440. `boot` copiait d'abord le code de l'eau vers `WTR_LO` (#31E3-#31F8) et `WTR_HI` (#39A0-#39FF), deux « trous » de la zone de donnees qui sont en fait DANS ce bloc : 22 octets de l'image 3 (= images 4 et 6 de la sheet, marche vers la gauche) et 96 octets de l'image 17 (image 23, diagonale) etaient ecrases par du code Z80 avant d'etre recopies. Defaut present dans toutes les zones (la sheet etait correcte).
+- **Correction** : la copie du code de l'eau est faite APRES la copie des sprites (meme `boot`, quelques octets plus bas). Aucun octet de code ajoute.
+- **Verification** : comparaison octet par octet des 35 images de Papi/explosions presentes en memoire apres 500 images de jeu avec les donnees generees par convert.py : 0 difference (avant : 2 images abimees). ghost.py : 0 octet fantome (zones 2, 3, 4, 9).
+- Test a refaire a chaque ajout de donnees dans #3000-#4440 : `tools/` n'a pas encore de controle automatique de cette integrite (a ajouter).

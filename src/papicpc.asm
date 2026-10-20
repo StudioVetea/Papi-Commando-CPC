@@ -5369,18 +5369,6 @@ perm_end:
 boot:
             di
             ld sp,STACK
-            ld hl,water_src             ; eau animee : routines recopiees en memoire basse et dans le trou de la grille (water.asm)
-            ld de,WTR_ZP
-            ld bc,water_zp_len
-            ldir
-            ld hl,water_src+water_zp_len
-            ld de,WTR_HI
-            ld bc,water_hi_len
-            ldir
-            ld hl,water_src+water_zp_len+water_hi_len
-            ld de,WTR_LO
-            ld bc,water_lo_len
-            ldir
             xor a
             ld (acc_zone),a
             ld a,3                      ; variables permanentes a valeur initiale
@@ -5406,6 +5394,18 @@ boot:
             ld d,a
             pop bc
             djnz .spc
+            ld hl,water_src             ; eau animee (APRES la copie des sprites : WTR_LO et WTR_HI tombent dans le bloc spr_papi, qui commence en #3000) : routines recopiees en memoire basse et dans le trou de la grille (water.asm)
+            ld de,WTR_ZP
+            ld bc,water_zp_len
+            ldir
+            ld hl,water_src+water_zp_len
+            ld de,WTR_HI
+            ld bc,water_hi_len
+            ldir
+            ld hl,water_src+water_zp_len+water_hi_len
+            ld de,WTR_LO
+            ld bc,water_lo_len
+            ldir
             call silence
             call build_tables           ; (ecrase la fin de ce fichier, ou etaient les sprites : ils sont deja copies)
             ifdef TEST64
