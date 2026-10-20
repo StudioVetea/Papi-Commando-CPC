@@ -919,3 +919,7 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Cause** : dans la routine d'eclat, `rra` reprenait la retenue laissee par l'instruction precedente dans le bit 7 du numero d'image : l'eclat n'atteignait jamais son image 3 (fin) et restait affiche indefiniment, avec un numero d'image au hasard (donc des octets quelconques de la memoire dessines a l'ecran = glitch anime). Remplace par `srl a`.
 - **Balle cachee derriere un ennemi** quand elle atteint sa portee : elle disparait (elle continuait de voler, hors portee, jusqu'au bord de l'ecran).
 - Verification : script de suivi des 10 balles image par image (zones 0, 1, 2, 3, 4, 1200-1500 images) : plus aucun eclat bloque, plus aucune balle au-dela de sa portee ; ghost.py : 0 octet fantome.
+
+### v46 : son de tir retabli, portees reduites de 15 %
+- **Bug du son** (introduit en v44) : `bullet_start` rend Z = « balle partie » ; en v44 son dernier test (`or a` sur B_DY, pour choisir la portee) laissait NZ pour tous les tirs verticaux et diagonaux. Resultat : pas de son de tir, pas de tir en couverture (Papi) et balles ennemies a pleine vitesse (demi-pas et fenetre de couverture non appliques). Ajout d'un `xor a` final. Verifie au PSG : le registre de volume monte pour un tir horizontal comme vertical.
+- **Portees -15 %** : Papi 76 px (19 pas en X de 4 px, 13 pas en Y de 6 px), soldat 68, officier 76, general 85, boss 94 ; vehicules toujours infinies. `rng_tab = 19,13 / 34,23 / 38,25 / 42,28 / 47,31 / 255,255`.

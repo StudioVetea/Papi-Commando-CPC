@@ -1466,13 +1466,14 @@ bullet_start:
 .rh         ld a,(hl)
             ld (ix+B_RNG),a
             ld (ix+B_ON),1
+            xor a                       ; sortie Z = balle partie (le test de DY laissait NZ pour les tirs verticaux : ni son, ni demi-pas)
             ret
 .out        or 1
             ret
 
 ; portee des balles, en pas (une balle de Papi fait 4 px de large / 6 de haut par pas, celles des ennemis la moitie) :
-; Papi 90 px, soldat 80, officier 90, general 100, boss 110, vehicule infinie.  Par classe : pas horizontaux, pas verticaux ou diagonaux
-rng_tab:    db 22,15, 40,27, 45,30, 50,33, 55,37, 255,255
+; Papi 76 px, soldat 68, officier 76, general 85, boss 94 (cahier du 20/10 moins 15 %), vehicule infinie.  Par classe : pas horizontaux, pas verticaux ou diagonaux
+rng_tab:    db 19,13, 34,23, 38,25, 42,28, 47,31, 255,255
 
 ; tir en couverture de Papi : A = direction, H = x, L = y du tireur, IX = balle qui vient de partir.
 ; Si la case JUSTE a cote de son corps, dans la direction du tir, est un mur rouge (il est colle a l'obstacle),
