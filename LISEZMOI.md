@@ -923,3 +923,7 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 ### v46 : son de tir retabli, portees reduites de 15 %
 - **Bug du son** (introduit en v44) : `bullet_start` rend Z = « balle partie » ; en v44 son dernier test (`or a` sur B_DY, pour choisir la portee) laissait NZ pour tous les tirs verticaux et diagonaux. Resultat : pas de son de tir, pas de tir en couverture (Papi) et balles ennemies a pleine vitesse (demi-pas et fenetre de couverture non appliques). Ajout d'un `xor a` final. Verifie au PSG : le registre de volume monte pour un tir horizontal comme vertical.
 - **Portees -15 %** : Papi 76 px (19 pas en X de 4 px, 13 pas en Y de 6 px), soldat 68, officier 76, general 85, boss 94 ; vehicules toujours infinies. `rng_tab = 19,13 / 34,23 / 38,25 / 42,28 / 47,31 / 255,255`.
+
+### v47 : impacts des balles sur les obstacles
+- Une balle (Papi ou ennemie) qui touche un obstacle (mur, caserne, tout decor qui arrete les balles) s'efface et affiche le meme eclat en 3 images que celui de fin de portee (etat 3, etiquette `.impact` dans `bullets_update`). Les balles qui sortent de l'ecran ou touchent un ennemi / Papi gardent leur comportement.
+- Mesure (bot, zone 0, 12 ennemis, 900 images) : 13 impacts sur obstacle, 8 fins de portee ; aucun eclat bloque ; ghost.py : 0 octet fantome (zones 0, 1, 3, 4, 9).

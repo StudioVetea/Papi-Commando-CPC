@@ -1586,10 +1586,10 @@ bullets_update:
 .ck         bit 1,a                     ; decor qui arrete les balles...
             jr z,.nowall
             bit 2,a                     ; une caserne arrete TOUTES les balles (meme celle d'un tireur a couvert)
-            jp nz,.kill
+            jp nz,.impact
             ld a,(ix+B_PASS)            ; ...sauf pour un tireur colle a son obstacle : sa balle le traverse
             or a
-            jp z,.kill
+            jp z,.impact
             jr .np                      ; (dans le mur, la fenetre reste ouverte : un obstacle epais est traverse en entier)
 .nowall     ld a,(ix+B_PASS)
             or a
@@ -1623,7 +1623,7 @@ bullets_update:
             call bullet_erase
             ld a,(ix+B_ON)
             dec a
-            jr nz,.next
+            jp nz,.next
             ld a,(ix+B_AGE)             ; au bout de sa portee : la balle eclate (cachee derriere un ennemi : elle disparait)
             cp (ix+B_RNG)
             jr c,.inr
@@ -1672,6 +1672,11 @@ bullets_update:
             ld (ix+B_OY),c
             call scr_addr
             call draw_gdat
+            jr .next
+.impact     call wake_enemies           ; impact sur un obstacle : la balle s'efface et son eclat s'affiche (meme animation qu'en fin de portee)
+            call bullet_erase
+            ld (ix+B_ON),3
+            ld (ix+B_AGE),0
             jr .next
 .kill       call wake_enemies           ; l'effacement peut abimer un sprite (le tireur, ou un ennemi arrive depuis)
             call bullet_erase
