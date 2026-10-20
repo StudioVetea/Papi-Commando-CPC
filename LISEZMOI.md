@@ -940,3 +940,7 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Correction** : la copie du code de l'eau est faite APRES la copie des sprites (meme `boot`, quelques octets plus bas). Aucun octet de code ajoute.
 - **Verification** : comparaison octet par octet des 35 images de Papi/explosions presentes en memoire apres 500 images de jeu avec les donnees generees par convert.py : 0 difference (avant : 2 images abimees). ghost.py : 0 octet fantome (zones 2, 3, 4, 9).
 - Test a refaire a chaque ajout de donnees dans #3000-#4440 : `tools/` n'a pas encore de controle automatique de cette integrite (a ajouter).
+
+### Outil : tools/integrity.py (controle d'integrite des images de sprites)
+- `python3 tools/integrity.py` (variables `ZONE=n`, `FR=images`, defaut 500 images de jeu) : demarre le jeu dans l'emulateur, relit la memoire et compare, octet par octet, les 35 images residentes (Papi, explosions, caisse) avec les donnees generees (`src/gfx_spr.asm`, adresses de `src/frames.asm`). Code de sortie 1 si une image est abimee ; pour chaque image abimee : numero, adresse, nombre d'octets faux, adresse correspondante dans le bloc source `spr_papi` et symbole voisin, et la commande `cpcrun watch:` pour trouver l'instruction qui ecrit.
+- A lancer apres chaque build, surtout quand on deplace du code ou des tables dans #3000-#4440 ou dans les « trous » de la page A. Verifie avec l'ancien ordre fautif du boot (v48) : detecte les 2 images abimees ; sur la v49 : 0.
