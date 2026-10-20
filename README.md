@@ -1,8 +1,9 @@
 # Papi Commando CPC
 
-Jeu d'action en vue de dessus pour **Amstrad CPC 464 / 664 / 6128 (64 Ko)**, MODE 0, 100 % assembleur Z80 ([RASM](https://github.com/EdouardBERGE/rasm)).
+Jeu d'action en vue de dessus pour **Amstrad CPC 6128 (128 Ko)**, MODE 0, 100 % assembleur Z80 ([RASM](https://github.com/EdouardBERGE/rasm)).
+Une *branche* **v42-64K** a été faite pour garder l'ancienne version 64Ko, j'ai migré vers 128Ko en prévision de la finalisation du jeu avec les nombreux ajouts restants à faire.
 
-Le jeu est compatible avec tous les modèles CPC d'origine, par contre vu la caractéristique de son moteur avec ses accès disques ( limitation 64Ko de RAM ), la version .rom n'est pas actuellement disponible pour les modèles GX4000/CPC+. A envisager par la suite pour profiter de l'upgrade HW du matériel, mais cela nécessitera une refonte complète du jeu.
+Le jeu est compatible avec tous les modèles CPC d'origine, par contre vu la caractéristique de son moteur avec ses accès disques, la version .rom n'est pas actuellement disponible pour les modèles GX4000/CPC+. A envisager par la suite pour profiter de l'upgrade HW du matériel, mais cela nécessitera une refonte complète du jeu.
 
 
 Papi, vétéran en mission commando, traverse des zones remplies de soldats, d'officiers et de généraux, jusqu'au boss final de la Zone 3 : le général Falzar.
