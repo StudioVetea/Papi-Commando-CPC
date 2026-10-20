@@ -56,10 +56,7 @@ go_run:     ld hl,go_data
             ld (HOF_MODE),a
             ld hl,menu_enter
             push hl
-            ld a,HOF_TRK
-            ld de,HOF_N
-            ld hl,HOF_LOAD
-            jp ovl_run
+            jp ovl_hof
 
 .vs         ld b,#F5
 .va         in a,(c)

@@ -138,10 +138,7 @@ intro_run:  call blackout
             ld (HOF_MODE),a
             ld hl,menu_enter            ; l'overlay HOF rend la main au menu principal
             push hl
-            ld a,HOF_TRK
-            ld de,HOF_N
-            ld hl,HOF_LOAD
-            jp ovl_run
+            jp ovl_hof
 ; HL = message de fin de zone : fanfare de victoire (4,4 s) puis un court silence
 .endscr     ld de,jv_data
             ld a,JV_FRAMES

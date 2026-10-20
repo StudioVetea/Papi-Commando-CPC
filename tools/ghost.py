@@ -14,7 +14,7 @@ sym["SLOT_TYPE"] = 0x3000
 sym["SLOT_FLASH"] = 0x3054
 ZONE = int(os.environ.get('ZONE', '0'))         # ZONE=4 : mission du boss
 def run(key, seed, frames):
-    cmds = [MODEL, root + '/build/PAPICPC.dsk', 'idle:%X:%X' % (sym['MAIN_LOOP'], sym['WAIT_END']), 'seed:%d' % seed, 'type:RUN"PAPICPC"~', 'run:1000', 'key:0x20', 'run:4', 'keyup:0x20'] + (['run:260', 'poke:%X:%d' % (sym['ZONE_CUR'], ZONE), 'key:0x20', 'run:4', 'keyup:0x20'] if ZONE else []) + ['run:420', 'poke:%X:%d' % (sym['NB_WANTED'], 2 * key), 'run:4',
+    cmds = [MODEL, root + '/build/PAPICPC.dsk', 'idle:%X:%X' % (sym['MAIN_LOOP'], sym['WAIT_END']), 'seed:%d' % seed, 'type:RUN"PAPICPC"~', 'run:1000', 'key:0x20', 'run:4', 'keyup:0x20'] + (['run:30', 'poke:%X:%d' % (sym['ZONE_CUR'], ZONE), 'key:0x20', 'run:4', 'keyup:0x20'] if ZONE else []) + ['run:420', 'poke:%X:%d' % (sym['NB_WANTED'], 2 * key), 'run:4',
             'poke:%X:99' % sym['KILLS_LEFT'], 'poke:%X:200' % sym['LIVES'], 'bot:1', 'run:%d' % frames]
     if '-seq' in sys.argv:      # partie perdue, nouvelle partie (les changements d'effectif en cours de partie n'existent plus)
         cmds += ['poke:%X:1' % sym['LIVES'], 'run:900']

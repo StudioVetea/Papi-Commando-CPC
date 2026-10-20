@@ -895,3 +895,12 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - Le jeu compte donc 15 missions (NZONES = 15 genere par convert.py) ; les touches secretes 1 a 5 du menu de test restent valables dans chaque zone.
 - **Invincibilite apres une mort : 1,5 s** (75 images, 138 avant).
 - Mesures : en zone 1, mission 4 : le Z80 tombe apres 15 kills et la mission se termine a sa prise (z80_f = 1, p_state = 2).
+
+### v43 : le noyau passe en 128 Ko (CPC 6128 uniquement)
+- **Detection au demarrage** : un octet #A5 ecrit en #7FF0 (config #C0), un autre #5A en banque 4 (config #C4), relecture en #C0. Si la memoire ne se comporte pas comme un 128 Ko : message « 128K REQUIRED / CPC 6128 ONLY ». (`-DTEST64` force ce message pour le tester.)
+- **Banques** : 0-3 = le jeu (config #C0, inchangee, la seule que le CRTC affiche). **Banques 4, 5, 6 = overlays** (menu, intro/hall of fame, game over) charges UNE fois au boot depuis la disquette par un petit bloc relogeable en #3000 (`OVLB`, < 224 octets) ; **banque 7 = libre** (modules : boss, zone 4...).
+- Plus de relecture disque entre les missions ni au retour au menu. Le menu est disponible plus tot.
+- `ovl_go` (A = config, HL = adresse) bascule la banque en #4000-#7FFF, appelle l'overlay, revient en #C0 ; `ovl_hof` en est le raccourci. GO_LOAD passe en #5400.
+- Marge de code permanent : 31 octets en diffusion, 10 en test. La place pour la zone 4 viendra des modules en banque 7 (code des boss deplace derriere des trampolines), pas du noyau.
+- Scripts de test : le menu etant pret plus tot, la touche de depart est suivie de 30 images avant de poker la zone.
+- Regression anti-fantomes (zones 0, 1, 3, 9, 10, 14) : 0 octet fantome ; 5 « octets faux » constants en zone 14 (boss Falzar, ligne 0 d'un sprite en chevauchement tete/corps) : artefact probable du controleur, a surveiller.

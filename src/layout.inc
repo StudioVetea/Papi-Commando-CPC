@@ -23,7 +23,7 @@ INTRO_N      equ 18
 INTRO_LOAD   equ #4000
 GO_TRK       equ 32
 GO_N         equ 4
-GO_LOAD      equ #4000
+GO_LOAD      equ #5400
 HOF_TRK      equ 33
 HOF_N        equ 10
 HOF_LOAD     equ #4000

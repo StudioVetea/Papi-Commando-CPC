@@ -255,10 +255,7 @@ hof_go:     call mu_stop
 hof_go2:    ld (HOF_MODE),a
             ld hl,menu_enter
             push hl
-            ld a,HOF_TRK
-            ld de,HOF_N
-            ld hl,HOF_LOAD
-            jp ovl_run
+            jp ovl_hof
 
 ; classement (Hall of Fame) : au 1er passage, les 7 entrees initiales sont recopiees dans les 16 octets libres de la page A
 hof_init:   ld a,(HOF_MAG1)

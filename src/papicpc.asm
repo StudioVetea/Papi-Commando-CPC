@@ -40,6 +40,15 @@ bullets     equ #308C           ; table des balles (100 octets) : zone #3000-#31
 FIRE_LAST   equ #3060           ; derniere image de tir de chaque ennemi (12 octets) : trou apres le 1er champ de distances
 GRENADE_HOLD equ 25             ; appui long sur tir = grenade : 25 images = 0,5 s (35 = 0,7 s en v12, 75 = 1,5 s en v11) ; a regler apres essais
             include 'layout.inc'        ; pistes de la cover et de la zone, zone de preparation (genere par tools/convert.py)
+; ---- CPC 6128 (128 Ko) : la fenetre #4000-#7FFF montre une banque de 16 Ko a la fois (port #7Fxx : #C0 + numero de configuration) ----
+;   banque 1 (configuration #C0, celle du demarrage) : le miroir du decor, pendant le jeu (GAME_CFG) ;
+;   banques 4, 5, 6 : les overlays (ecrans), lus UNE fois au demarrage puis simplement affiches en #4000 quand on en a besoin (ovl_go) :
+;   plus de lecture disquette entre les missions ; banque 7 : libre (modules de mission, etc.)
+GAME_CFG    equ #C0             ; banque 1 en #4000 : le miroir
+CFG_MENU    equ #C4             ; banque 4 : menu principal (entree MENU_LOAD)
+CFG_INTRO   equ #C5             ; banque 5 : ecrans de mission (entree INTRO_LOAD, bandeau INTRO_LOAD+3)
+CFG_HOF     equ #C6             ; banque 6 : Hall of Fame (entree HOF_LOAD)...
+CFG_GO      equ #C6             ; ...et game over (entree GO_LOAD, un peu plus loin dans la meme banque)
 spawn_tab   equ #306C          ; 16 x (x,y) : copie des points d'apparition de la zone (apres FIRE_LAST ; #3DA0+ est efface par init_screen)
 slot_type   equ #3000          ; caracteristiques de chaque place d'ennemi, copiees de l'en-tete du fichier de zone (12 octets chacune)
 slot_spd    equ #300C          ; decalage dans les tables de vitesse (0 normal, 32 rapide)
@@ -153,12 +162,13 @@ new_game:
             ld (lives_keep),a
             ld hl,zone_cur              ; mission suivante (apres la derniere : ecran de fin, puis le menu : voir intro.asm)
             inc (hl)
-.same       ld a,INTRO_TRK              ; ecran noir : zone, numero et type de mission (overlay) ; la zone se charge ensuite
-            ld de,INTRO_N
+.same       ld a,CFG_INTRO              ; ecran noir : zone, numero et type de mission (overlay, en banque) ; la zone se charge ensuite
             ld hl,INTRO_LOAD
-            call ovl_run
+            call ovl_go
             call load_zone
-new_game2:  call INTRO_LOAD+3           ; bandeau (efface par les ecrans noirs) : redessine par l'overlay, encore en memoire (#4000-#47FF)
+new_game2:  ld a,CFG_INTRO              ; bandeau (efface par les ecrans noirs) : redessine par l'overlay
+            ld hl,INTRO_LOAD+3
+            call ovl_go
             call init_screen
             call build_occy
             call init_game
@@ -1360,10 +1370,9 @@ player_dying:
             or a
             jp nz,new_game
             di
-            ld a,GO_TRK
-            ld de,GO_N
+            ld a,CFG_GO
             ld hl,GO_LOAD
-            call ovl_run
+            call ovl_go
             jp menu_enter
 
 ; Papi est touche (par une balle ou un ennemi).  conserve BC, DE, HL
@@ -4667,26 +4676,24 @@ menu_enter:
             xor a
             ld (zone_cur),a             ; une nouvelle partie recommence a la mission 1
             ld (won),a
-            ld a,MENU_TRK
-            ld de,MENU_N
+            ld a,CFG_MENU
             ld hl,MENU_LOAD
-            call ovl_run
+            call ovl_go
             jp new_game
 
-; lit un overlay (A = piste, DE = secteurs, HL = adresse) puis l'execute : son 'ret' revient chez l'appelant
-ovl_run:    push hl
-            push de
-            push af
-            call fdc_on
-            pop af
-            pop de
-            ld b,0
-            pop hl
-            push hl
-            call load_data
-            call fdc_off
-            pop hl
-            jp (hl)
+; affiche en #4000 la banque de l'overlay (A = configuration #C0 + banque, HL = point d'entree) et l'execute ; son 'ret' revient chez
+; l'appelant, apres remise du miroir (banque 4). (Le port #7Fxx se decode sur A15 = 0 et A14 = 1 : l'octet bas ne compte pas.)
+ovl_go:     ld b,#7F
+            out (c),a
+            call .go
+            ld bc,#7F00+GAME_CFG
+            out (c),c
+            ret
+.go         jp (hl)
+; le Hall of Fame depuis un autre overlay (qui a empile son adresse de retour) : voir menu.asm, intro.asm, gameover.asm
+ovl_hof:    ld a,CFG_HOF
+            ld hl,HOF_LOAD
+            jp ovl_go
 
 big_on:     db 0                        ; octet "allume" des gros caracteres (2 pixels du meme stylo)
 big_buf     equ #30F0                   ; (4 octets : trou libre de #3000-#31FF, hors du programme)
@@ -5317,6 +5324,15 @@ boot:
             djnz .spc
             call silence
             call build_tables           ; (ecrase la fin de ce fichier, ou etaient les sprites : ils sont deja copies)
+            ifdef TEST64
+              jp no128                  ; (essai : se comporter comme un CPC 64 Ko)
+            endif
+            ld hl,ovlb_src              ; 128 Ko ? (le test change de banque : il s'execute en memoire basse, copie ici)
+            ld de,OVLB
+            ld bc,ovlb_end-ovlb_src
+            ldir
+            call OVLB
+            jp nz,no128
             call fdc_on                 ; le moteur reste en marche : la zone se chargera des l'appui sur tir
             ld a,COVER_TRK
             ld b,COVER_SEC
@@ -5326,6 +5342,7 @@ boot:
             ld hl,COVER_LOAD
             ld de,#C000
             call unpack
+            call OVLB+(ovlb_load-ovlb_src)  ; les ecrans (menu, missions, game over, Hall of Fame) : lus UNE fois, dans les banques 4, 5 et 6
             ld bc,50*5                  ; la cover reste a l ecran 5 secondes (250 images), puis le menu principal
 .wait       push bc
             ld b,#F5
@@ -5360,6 +5377,89 @@ boot:
             ld (#39),hl
             im 1
             jp menu_enter               ; menu principal (overlay lu sur la disquette), puis la 1re zone
+
+; --- bloc recopie en OVLB (memoire basse, libre au demarrage) : il change de banque, donc ne peut pas s'executer dans la fenetre #4000 ---
+;   OVLB       : test des 128 Ko (retour : Z = oui)
+;   OVLB+ovlb_load-ovlb_src : lit les 4 overlays dans leurs banques ; le miroir (banque 1) revient ensuite
+OVLB        equ #3000
+ovlb_src:   ld hl,#7FF0                 ; la meme adresse, vue dans la banque 1 puis dans la banque 4 : deux cases differentes
+            ld bc,#7FC0
+            out (c),c
+            ld (hl),#A5
+            ld c,#C4
+            out (c),c
+            ld (hl),#5A                 ; (sur un 64 Ko, c'est la meme case : elle vaut maintenant #5A)
+            ld c,#C0
+            out (c),c
+            ld a,(hl)
+            cp #A5
+            ret
+ovlb_load:  ld hl,OVLB+(ovlb_tab-ovlb_src)
+.lo         ld a,(hl)
+            inc hl
+            ld b,#7F
+            out (c),a                   ; la banque de l'overlay apparait en #4000
+            ld a,(hl)                   ; piste
+            inc hl
+            ld e,(hl)
+            inc hl
+            ld d,(hl)                   ; secteurs
+            inc hl
+            ld c,(hl)
+            inc hl
+            ld b,(hl)                   ; adresse de chargement
+            inc hl
+            push hl                     ; suite de la table
+            ld h,b
+            ld l,c
+            ld b,0                      ; a partir du secteur 0 de la piste
+            call load_data
+            pop hl
+            ld a,l
+            cp (OVLB+(ovlb_tab_end-ovlb_src))&255
+            jr nz,.lo
+            ld bc,#7F00+GAME_CFG        ; le miroir revient
+            out (c),c
+            jp fdc_off                  ; le moteur s'arrete : plus de lecture avant la premiere zone
+ovlb_tab:   db CFG_MENU,MENU_TRK
+            dw MENU_N,MENU_LOAD
+            db CFG_INTRO,INTRO_TRK
+            dw INTRO_N,INTRO_LOAD
+            db CFG_GO,GO_TRK
+            dw GO_N,GO_LOAD
+            db CFG_HOF,HOF_TRK
+            dw HOF_N,HOF_LOAD
+ovlb_tab_end:
+ovlb_end:
+            assert ovlb_end-ovlb_src<=#E0
+
+; pas de 128 Ko : message, et on s'arrete
+no128:      ld bc,#7F8C                 ; MODE 0, ROM haute et basse coupees (deja fait)
+            out (c),c
+            ld hl,#C000                 ; ecran vide
+            ld de,#C001
+            ld bc,#3FFF
+            ld (hl),0
+            ldir
+            ld bc,#7F00                 ; encre 0 : noir, encre 1 : blanc
+            out (c),c
+            ld c,#54
+            out (c),c
+            ld bc,#7F01
+            out (c),c
+            ld c,#4B
+            out (c),c
+            ld a,#C0                    ; stylo 1 : les deux pixels de l'octet
+            ld (big_on),a
+            ld hl,txt_no128a
+            ld bc,14*256+60
+            call print_big
+            ld hl,txt_no128b
+            ld bc,14*256+84
+            call print_big
+            jr $
+txt_no128a: db '128K REQUIRED',0
+txt_no128b: db 'CPC 6128 ONLY',0
 
 black_pal:  ds 17,#54
 set_palette:                            ; HL = 17 octets (16 encres + bordure)

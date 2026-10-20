@@ -864,7 +864,7 @@ def main():
         f.write('NZONES       equ %d\nZSTAGE       equ #%04X\n' % (len(ZONES), ZSTAGE))
         f.write('Z_SPAWN      equ %d\nZ_TILEMAP    equ %d\nZ_TKIND      equ %d\nZ_FRAMES     equ %d\nZ_TILES      equ %d\nZ_SPR        equ %d\n' % (Z_SPAWN, Z_TILEMAP, Z_TKIND, Z_FRAMES, Z_TILES, Z_SPR))
         f.write('TILE_BASE    equ #%04X\nZSPR_DST     equ #%04X\nZSPR_C       equ %d\nWHITE        equ #%02X\n' % (slot_addr(SLOT0_ZONE - 1), slot_addr(SLOT0_ZONE), SPRSLOT - SLOT0_ZONE % SPRSLOT, enc(13, 13)))
-        f.write('MENU_TRK     equ %d\nMENU_N       equ %d\nMENU_LOAD    equ #%04X\nINTRO_TRK    equ %d\nINTRO_N      equ %d\nINTRO_LOAD   equ #%04X\nGO_TRK       equ %d\nGO_N         equ %d\nGO_LOAD      equ #4000\nHOF_TRK      equ %d\nHOF_N        equ %d\nHOF_LOAD     equ #4000\n' % (menu_trk, MENU_N, MENU_LOAD, intro_trk, INTRO_N, INTRO_LOAD, gover_trk, GO_N, hof_trk, HOF_N))
+        f.write('MENU_TRK     equ %d\nMENU_N       equ %d\nMENU_LOAD    equ #%04X\nINTRO_TRK    equ %d\nINTRO_N      equ %d\nINTRO_LOAD   equ #%04X\nGO_TRK       equ %d\nGO_N         equ %d\nGO_LOAD      equ #5400\nHOF_TRK      equ %d\nHOF_N        equ %d\nHOF_LOAD     equ #4000\n' % (menu_trk, MENU_N, MENU_LOAD, intro_trk, INTRO_N, INTRO_LOAD, gover_trk, GO_N, hof_trk, HOF_N))
         f.write('XSLOT_BASE   equ #%04X\nNXS          equ %d\nZ_ICON       equ %d\n' % (XSLOT_BASE, NXS, Z_ICON))
         f.write('tiles        equ ZSTAGE+Z_TILES\ntilemap      equ ZSTAGE+Z_TILEMAP\ntkind        equ ZSTAGE+Z_TKIND\n')
     with open(os.path.join(ROOT, 'src', 'zones.inc'), 'w') as f:
