@@ -994,3 +994,7 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **5 ennemis au maximum** en presence des vehicules (zone 4 : `units` = 5 pour les 4 missions ; casernes et camion partagent ce maximum).
 - **Flicker** : le camion est maintenant efface et redessine **ligne par ligne** (`mv_il` : `b1_restore` d'une ligne puis blit de cette ligne), au lieu d'effacer tout le rectangle puis de dessiner ; le decor n'est plus visible qu'un instant par ligne.
 - **Moteur** : compresseur LZ a parcours optimal (programmation dynamique, `lz_compress`) : toute la disquette est un peu plus petite ; banque 7 = 8182 / 8192 octets.
+
+### v57 : vehicules : un dessin toutes les 3 images
+- **Pas de 2 octets** : le vehicule avance de 2 octets (4 pixels) a chaque pas, avec `V_SPEED` = 80 : meme vitesse (0,63 octet / image), mais environ 2 fois moins de dessins (efface + blit) donc moins de lag et de flicker. Les bornes (0 et 90) sont atteintes exactement.
+- Piste non retenue : sprite opaque sans masque. Le decor sous le camion (desert + fine bande de route) n'est pas uniforme : un rectangle opaque se verrait. Le masque est conserve.

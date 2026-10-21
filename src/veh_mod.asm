@@ -15,7 +15,7 @@
 ;==============================================================================
 V_Y0        equ 88              ; y du haut du camion sur la route (rangee 13 ; le bas du camion = le bas de la route : 8 x 14 - 24)
 V_Y1        equ 88              ; (une seule route : rangee 13)
-V_SPEED     equ 161             ; 161/256 = 0,63 octet par image = 1,8 x Papi (2 x Papi - 10 %)
+V_SPEED     equ 80              ; pas de 2 octets : 80/256 x 2 = 0,63 octet par image (1,8 x Papi), mais un dessin toutes les 3 images
 V_HP        equ 50              ; points de vie du camion de troupes quand ce n'est pas la mission du camion
 V_DROP      equ 100             ; images entre deux unites larguees (2 s)
 V_XMAX      equ 90              ; x + 12 : la valeur 90 = tout juste sorti par la droite ; 0 = tout juste sorti par la gauche
@@ -243,11 +243,13 @@ mv_truck:   ld a,(v_act)
             ld a,(v_xo)
             jr nz,.left
             inc a
+            inc a                       ; pas de 2 octets : deux fois moins de dessins
             ld (v_xo),a
             cp V_XMAX
             jr z,.leave
             jr .mv
 .left       dec a
+            dec a
             ld (v_xo),a
             jr z,.leave
 .mv         call mv_drawcheck
