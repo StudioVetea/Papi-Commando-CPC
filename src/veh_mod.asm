@@ -13,8 +13,11 @@
 ;   Le module ne voit pas le miroir (banque 1) : il efface par la rampe b1_restore et dessine par-dessus (ecran) ; b1_wtr dessine une tuile (ecran ET miroir).
 ;   Appele par veh_call (boss.asm) : A = 1 image, 2 balle de Papi (IX), 3 explosion de grenade, 4 case de bidon touchee (HL).  IX et IY conserves.
 ;==============================================================================
-V_Y0        equ 88              ; y du haut du camion sur la route (rangee 13 ; le bas du camion = le bas de la route : 8 x 14 - 24)
-V_Y1        equ 88              ; (une seule route : rangee 13)
+TW          equ 11              ; largeur du sprite en octets (22 pixels)
+TH          equ 18              ; hauteur en lignes
+TIMG        equ 2*TW*TH         ; taille d'une image (masque + donnee)
+V_Y0        equ 112-TH              ; y du haut du camion sur la route (rangee 13 ; le bas du camion = le bas de la route : 8 x 14 - 24)
+V_Y1        equ V_Y0              ; (une seule route : rangee 13)
 V_SPEED     equ 80              ; pas de 2 octets : 80/256 x 2 = 0,63 octet par image (1,8 x Papi), mais un dessin toutes les 3 images
 V_HP        equ 50              ; points de vie du camion de troupes quand ce n'est pas la mission du camion
 V_DROP      equ 100             ; images entre deux unites larguees (2 s)
@@ -25,7 +28,7 @@ V_BSPACE    equ 5
 V_BDELAY    equ 50
 NBAR        equ 8
 BARSZ       equ 6               ; case du haut (2), coups, etat (1 bidon, 2 en flammes), phase de la flamme affichee
-EXPL_DATA   equ TRUCK_DATA+10*576
+EXPL_DATA   equ TRUCK_DATA+10*TIMG
 
 m_veh:      push ix
             push iy
@@ -71,27 +74,27 @@ mv_contact: ld a,(v_act)
             ld a,(p_x)
             ld hl,v_xo
             sub (hl)
-            add a,17
-            cp 17
+            add a,TW+5
+            cp TW+5
             ret nc
             ld a,(p_y)
             ld hl,v_y
             sub (hl)
             add a,11
-            cp 35
+            cp TH+11
             ret nc
             jp player_hit
 
 ; (IX+1, IX+2) = (x, y) dans le rectangle du camion (C = xo, B = y) ? carry si oui
 mv_ovl:     ld a,(ix+1)
             sub c
-            add a,17
-            cp 17
+            add a,TW+5
+            cp TW+5
             ret nc
             ld a,(ix+2)
             sub b
             add a,11
-            cp 35
+            cp TH+11
             ret
 
 ; fin d'image : si quelque chose a ete dessine sur le camion (ennemi, balle, explosion), on repeint le camion par-dessus
@@ -258,7 +261,7 @@ mv_truck:   ld a,(v_act)
             cp 3
             call z,mv_war
             ld a,(v_xo)                 ; largage : toutes les 2 s, quand le camion est entierement a l'ecran, Papi en vie
-            cp 12
+            cp TW
             ret c
             cp 79
             ret nc
@@ -287,7 +290,7 @@ mv_truck:   ld a,(v_act)
             or a
             ld a,(v_xo)
             jr nz,.rl
-            sub 18                      ; vers la droite : l'arriere est a gauche
+            sub TW+6                    ; vers la droite : l'arriere est a gauche
             sub c
             jr c,.nk
             jr .xk
@@ -340,7 +343,7 @@ mv_range:   ld c,a
             cp 79
             jr c,.h
             ld c,78
-.h          sub 12
+.h          sub TW
             jr nc,.l
             xor a
 .l          ld b,a
@@ -396,7 +399,7 @@ mv_draw:    call mv_image
             jr .nodraw
 .full       ld a,(v_y)
             ld c,a
-            ld e,24
+            ld e,TH
             call b1_restore
 .nodraw     ld a,(v_xo)
             ld (v_ox),a
@@ -411,7 +414,7 @@ mv_paint:   ld a,(nw_hi)                ; le sprite : colonnes visibles [nw_lo, 
             ld a,(v_xo)                 ; decalage dans l'image : 2 x (bord gauche visible + 12 - x0) octets
             ld c,a
             ld a,(nw_lo)
-            add a,12
+            add a,TW
             sub c
             add a,a
             ld c,a
@@ -428,8 +431,9 @@ mv_paint:   ld a,(nw_hi)                ; le sprite : colonnes visibles [nw_lo, 
             ex de,hl
             add hl,bc
             ex de,hl                    ; DE = source
-            ld a,24
+            ld a,2*TW
             ld (bl_s),a
+            ld a,TH
             ld (bl_h),a
             ld a,(nw_lo)
             ld b,a
@@ -449,7 +453,7 @@ mv_paint:   ld a,(nw_hi)                ; le sprite : colonnes visibles [nw_lo, 
 mv_il:      ld (il_fn),hl
             xor a
             ld (il_on),a
-            ld a,24
+            ld a,TH
             ld (il_n),a
 .l          push bc
             push de
@@ -487,7 +491,7 @@ mv_erase:   ld a,(v_ox)
             ld d,a
             ld a,(v_oy)
             ld c,a
-            ld e,24
+            ld e,TH
             call b1_restore
 .n          ld a,#FF
             ld (v_ox),a
@@ -504,13 +508,13 @@ mv_wake:    ld c,a
             jr z,.n
             ld a,(ix+E_X)
             sub c
-            add a,17
-            cp 17
+            add a,TW+5
+            cp TW+5
             jr nc,.n
             ld a,(ix+E_Y)
             sub b
             add a,11
-            cp 35
+            cp TH+11
             jr nc,.n
             ld (ix+E_LAST),#FF
 .n          add ix,de
@@ -599,7 +603,7 @@ mv_drop:    ld a,(nb_wanted)
 .free       ld a,(v_dxx)
             ld b,a
             ld a,(v_y)
-            add a,12
+            add a,TH-12
             ld c,a
             call can_stand_e
             jr z,.ok
@@ -616,7 +620,7 @@ mv_war:     ld a,(p_state)
             or a
             ret nz
             ld a,(v_xo)
-            cp 12
+            cp TW
             ret c
             cp 79
             ret nc
@@ -634,13 +638,13 @@ mv_war:     ld a,(p_state)
             jp mv_shoot
 ; vise Papi dans les 4 directions : horizontal si 3 |dx| >= |dy|, sinon vertical
 mv_aim:     ld a,(v_xo)
-            sub 6
+            sub TW/2
             ld b,a
             ld a,(p_x)
             sub b
             ld b,a                      ; dx
             ld a,(v_y)
-            add a,12
+            add a,TH/2
             ld c,a
             ld a,(p_y)
             add a,6
@@ -684,7 +688,7 @@ mv_shoot:   ld a,(v_aim)
             add hl,de
             add hl,de
             ld a,(v_xo)
-            sub 12
+            sub TW
             add a,(hl)
             ld b,a                      ; H : x du camion + decalage (la balle part de decalage + shot_tab)
             inc hl
@@ -722,7 +726,7 @@ mv_shoot:   ld a,(v_aim)
             call bullet_start
             pop ix
             ret
-mv_ktab:    db 5,6, 1,6, 5,10, 5,8      ; par direction : decalage x, y du point de depart de la balle (apres soustraction du decalage de shot_tab)
+mv_ktab:    db 5,2, 1,2, 5,6, 5,4      ; par direction : decalage x, y du point de depart de la balle (apres soustraction du decalage de shot_tab)
 
 ;------------------------------------------------------------------------------
 ; touches
@@ -734,14 +738,14 @@ mv_bullet:  ld a,(v_act)
             ld a,(ix+B_X)
             ld hl,v_xo
             sub (hl)
-            add a,12
-            cp 12
+            add a,TW
+            cp TW
             ret nc
             ld a,(ix+B_Y)
             ld hl,v_y
             sub (hl)
             add a,2
-            cp 26
+            cp TH+2
             ret nc
             ld (ix+B_ON),2
             ld a,1
@@ -779,7 +783,7 @@ mv_dmg:     ld c,a
 
 ; coordonnees des deux explosions du camion : B = x gauche, D = x droit, C = y
 mv_spots:   ld a,(v_xo)
-            sub 12
+            sub TW
             jr nc,.a
             xor a
 .a          cp 73
@@ -795,7 +799,7 @@ mv_spots:   ld a,(v_xo)
             ld a,72
 .d          ld d,a
             ld a,(v_y)
-            add a,6
+            add a,TH/2-6
             ld c,a
             ret
 
@@ -1231,7 +1235,7 @@ mv_hazard:  ld a,(v_nb)
             djnz .l
             ret
 
-mv_sprtab:  dw TRUCK_DATA, TRUCK_DATA+576, TRUCK_DATA+2*576, TRUCK_DATA+3*576, TRUCK_DATA+4*576, TRUCK_DATA+5*576, TRUCK_DATA+6*576, TRUCK_DATA+7*576, TRUCK_DATA+8*576, TRUCK_DATA+9*576
+mv_sprtab:  dw TRUCK_DATA, TRUCK_DATA+TIMG, TRUCK_DATA+2*TIMG, TRUCK_DATA+3*TIMG, TRUCK_DATA+4*TIMG, TRUCK_DATA+5*TIMG, TRUCK_DATA+6*TIMG, TRUCK_DATA+7*TIMG, TRUCK_DATA+8*TIMG, TRUCK_DATA+9*TIMG
 
 ; variables du module (remises a zero au debut de chaque mission : mv_init)
 mv_vars:

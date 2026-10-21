@@ -699,22 +699,22 @@ def build_trucks():
        ArmyTruck : 2 images (0 = vers la gauche, comme dessine, 1 = miroir) ; WarTruck : 8 images, (cap * 4 + direction du canon) avec
        direction 0 droite, 1 gauche, 2 bas, 3 haut (planche : canon a gauche, a droite, en haut, en bas) ; vers la droite : miroir de l'image de la direction opposee"""
     def mirror(g): return [row[::-1] for row in g]
-    def img(g, y0): return masked(g, 0, y0, 24, 24)
+    def img(g, y0): return masked(g, 0, y0, 22, 18)
     out = []
-    a = load('ArmyTruck_24x24.png')
+    a = load('ArmyTruck_22x18.png')
     out += img(a, 0) + img(mirror(a), 0)
-    w = load('WarTruck_24x96.png')
+    w = load('WarTruck_22x72.png')
     frame = {1: 0, 0: 1, 3: 2, 2: 3}          # direction du canon -> image de la planche (vers la gauche) : planche = canon W, E, N, S
     for facing in (0, 1):                     # 0 : vers la gauche (cap), 1 : vers la droite (miroir)
         for aim in range(4):
-            if facing == 0: out += img(w, 24 * frame[aim])
+            if facing == 0: out += img(w, 18 * frame[aim])
             else:
                 opp = {0: 1, 1: 0, 2: 2, 3: 3}[aim]
-                out += img(mirror(w), 24 * frame[opp])
-    assert len(out) == 10 * 576
+                out += img(mirror(w), 18 * frame[opp])
+    assert len(out) == 10 * 396
     ex = load('Explosion12x12.png')                       # 4 images d'explosion 12 x 12, memes octets que celles du moteur mais SANS l'ordre en zigzag (le module des vehicules les affiche ligne par ligne)
     for fr in range(3): out += masked(ex, fr * 12, 0, 12, 12)
-    assert len(out) == 10 * 576 + 3 * 144
+    assert len(out) == 10 * 396 + 3 * 144
     open(os.path.join(BUILD, 'trucks.bin'), 'wb').write(bytes(out))
 
 def build_hof(title_rows):

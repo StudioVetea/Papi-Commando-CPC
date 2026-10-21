@@ -998,3 +998,7 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 ### v57 : vehicules : un dessin toutes les 3 images
 - **Pas de 2 octets** : le vehicule avance de 2 octets (4 pixels) a chaque pas, avec `V_SPEED` = 80 : meme vitesse (0,63 octet / image), mais environ 2 fois moins de dessins (efface + blit) donc moins de lag et de flicker. Les bornes (0 et 90) sont atteintes exactement.
 - Piste non retenue : sprite opaque sans masque. Le decor sous le camion (desert + fine bande de route) n'est pas uniforme : un rectangle opaque se verrait. Le masque est conserve.
+
+### v58 : sprites des vehicules 22 x 18
+- Nouveaux sprites de Vetea : `ArmyTruck_22x18.png` et `WarTruck_22x72.png` (4 images de 22 x 18) : 11 octets x 18 lignes (396 octets par image au lieu de 576). Surface : -45 % : effacement et blit sensiblement plus rapides, banque 7 : 8060 / 8192 octets.
+- Le module est parametre par `TW` (11), `TH` (18) et `TIMG` : contact, effacement, position sur la route (`V_Y0` = 112 - TH : les roues restent au bas de la route), largage (derriere le camion, a hauteur de roues), visee, explosions, zone de touche des balles. Point de depart des balles du WarTruck : `mv_ktab` = (5,2) (5,6) (5,4) (1,2) a ajuster si la bouche du canon semble decalee.
