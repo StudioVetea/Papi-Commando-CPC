@@ -1014,3 +1014,10 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Eau allegee en zone a vehicules** : `wtr_tick` ne balaie la grille qu'une image sur 2 et la phase de l'animation change toutes les 32 images (au lieu de 16) quand `veh_on` != 0. Zones sans vehicule inchangees.
 - **Mesures** (bot, 1000 images) : M1 49,7 fps (1,6 % des images > 20 ms, max 27 ms) ; M4 49,4 fps (2,9 %, max 26 ms) ; M4 Papi immobile 50,0 fps.
 - **Outils** : `cpcrun` : historique des 8192 derniers PC sur `trap:` (variable `TRAPW=xxxx` : seulement si le mot en haut de pile vaut xxxx), `spodd:1`, `spmin:r` / `spmin:p` (profondeur maximale de la pile) ; `symvars.py` : les variables permanentes (PVARS) etaient decalees d'1 octet depuis la v50 (tests uniquement).
+
+### v61 : WarTruck en rafales de 3, balles plus lentes, bidons = 5 degats
+- **WarTruck** : une rafale de **3 balles** (espacees de 6 images, un seul son) toutes les ~1 s, visee dans les 4 directions comme avant.
+- **Balles du WarTruck** : vitesse divisee par 2 (meme pas que les balles des soldats).
+- **Bidon enflamme** : en explosant, il inflige **5 points de degats** a chaque ennemi proche (au lieu de le tuer d'un coup) ; un ennemi a 1-2 PV meurt toujours, un a plus de PV peut survivre.
+- **Banque 7** : explosion ramenee a **2 images** (au lieu de 3) pour liberer de la place ; `VOICE_OFF` = #C40, 8182 / 8192 octets compresses.
+- **Mesures** (bot, 1000 images, zone 4 M4) : ~46 fps (v60 : 47,8-49,4 sur les memes graines) ; plus de balles a l'ecran en meme temps = un peu plus de charge.

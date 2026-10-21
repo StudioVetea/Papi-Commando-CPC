@@ -24,8 +24,8 @@ V_DROP      equ 100             ; images entre deux unites larguees (2 s)
 V_XMAX      equ 90              ; x + 12 : la valeur 90 = tout juste sorti par la droite ; 0 = tout juste sorti par la gauche
 V_FLASH     equ 6               ; images de flash blanc quand le vehicule est touche
 V_BURST     equ 3
-V_BSPACE    equ 5
-V_BDELAY    equ 50
+V_BSPACE    equ 6
+V_BDELAY    equ 40
 NBAR        equ 8
 BARSZ       equ 6               ; case du haut (2), coups, etat (1 bidon, 2 en flammes), phase de la flamme affichee
 EXPL_DATA   equ TRUCK_DATA+10*TIMG
@@ -715,17 +715,34 @@ mv_war:     ld a,(p_state)
             cp 79
             ret nc
             call mv_aim
+            ld a,(v_bn)
+            or a
+            jr nz,.in
             ld a,(v_bcd)
             or a
-            jr z,.fire
+            jr z,.start
             dec a
             ld (v_bcd),a
             ret
-.fire       ld a,V_BDELAY
-            ld (v_bcd),a
+.start      ld a,V_BURST                ; une rafale de 3 balles, un seul son
+            ld (v_bn),a
+            xor a
+            ld (v_bt),a
             ld a,11
             call sfx
-            jp mv_shoot
+.in         ld a,(v_bt)
+            or a
+            jr z,.shoot
+            dec a
+            ld (v_bt),a
+            ret
+.shoot      ld a,V_BSPACE
+            ld (v_bt),a
+            ld hl,v_bn
+            dec (hl)
+            jr nz,mv_shoot
+            ld a,V_BDELAY
+            ld (v_bcd),a
 ; vise Papi dans les 4 directions : horizontal si 3 |dx| >= |dy|, sinon vertical
 mv_aim:     ld a,(v_xo)
             sub TW/2
@@ -814,7 +831,10 @@ mv_shoot:   ld a,(v_aim)
             ld l,c
             ld a,(v_aim)
             call bullet_start
-            pop ix
+            jr nz,.x
+            sra (ix+B_DX)               ; pas de la balle divise par deux (comme les balles des soldats)
+            sra (ix+B_DY)
+.x          pop ix
             ret
 mv_ktab:    db 5,2, 1,2, 5,6, 5,4      ; par direction : decalage x, y du point de depart de la balle (apres soustraction du decalage de shot_tab)
 
@@ -948,7 +968,7 @@ mv_fxadd:   ld hl,v_fxs+2               ; B = x, C = y
             dec a
             jr nz,.f
             ret
-.free       ld (hl),13
+.free       ld (hl),9
             dec hl
             ld (hl),c
             dec hl
@@ -970,7 +990,7 @@ mv_fx:      ld ix,v_fxs
             srl a
             srl a
             ld c,a
-            ld a,3
+            ld a,2
             sub c
             ld hl,EXPL_DATA
             ld de,144
@@ -1168,8 +1188,13 @@ mv_explode: ld (iy+3),2
             cp 37
             jr nc,.en
             push bc
-            call enemy_kill_now
-            pop bc
+            ld b,5                      ; 5 points de degat (un par appel : s'arrete a la mort)
+.dm         call enemy_killed
+            ld a,(ix+E_STATE)
+            dec a
+            jr nz,.dd
+            djnz .dm
+.dd         pop bc
 .en         ld de,ESIZE
             add ix,de
             djnz .e

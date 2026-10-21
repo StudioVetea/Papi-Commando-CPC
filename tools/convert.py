@@ -653,7 +653,7 @@ def build_menu():
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
 VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0xC00                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
+VOICE_OFF = 0xC40                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
 def build_voice():
     """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
     PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
@@ -713,8 +713,8 @@ def build_trucks():
                 out += img(mirror(w), 18 * frame[opp])
     assert len(out) == 10 * 396
     ex = load('Explosion12x12.png')                       # 4 images d'explosion 12 x 12, memes octets que celles du moteur mais SANS l'ordre en zigzag (le module des vehicules les affiche ligne par ligne)
-    for fr in range(3): out += masked(ex, fr * 12, 0, 12, 12)
-    assert len(out) == 10 * 396 + 3 * 144
+    for fr in (0, 2): out += masked(ex, fr * 12, 0, 12, 12)
+    assert len(out) == 10 * 396 + 2 * 144
     open(os.path.join(BUILD, 'trucks.bin'), 'wb').write(bytes(out))
 
 def build_hof(title_rows):
