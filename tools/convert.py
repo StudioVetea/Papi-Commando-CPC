@@ -122,7 +122,7 @@ FONT_ORDER = "0123456789 ACEGIMNOPRSVUTFLD-HKZ!.Y+BQW"   # (X et % : plus utilis
 #  chacun ajoute jusqu'a un octet different de 255), les litteraux, puis decalage sur 2 octets (poids faible d'abord)
 #  et suite eventuelle de la longueur. Un decalage nul termine le flux.  Decompresseur : unpack (src/papicpc.asm).
 def lz_compress(data):
-    n = len(data); out = bytearray(); chains = {}; i = 0; lit0 = 0
+    n = len(data); out = bytearray(); chains = {}
     def ext(v):
         b = bytearray()
         while v >= 255: b.append(255); v -= 255
@@ -130,14 +130,25 @@ def lz_compress(data):
     def best(pos):
         if pos + 4 > n: return (0, 0)
         key = bytes(data[pos:pos + 4]); bl, bo = 0, 0
-        for cand in reversed(chains.get(key, [])[-20000:]):
+        for cand in reversed(chains.get(key, [])):
             if pos - cand > 65535: break
             l = 0
             while pos + l < n and data[cand + l] == data[pos + l]: l += 1
             if l > bl: bl, bo = l, pos - cand
         return (bl, bo)
-    def add(pos):
-        if pos + 4 <= n: chains.setdefault(bytes(data[pos:pos + 4]), []).append(pos)
+    mt = [(0, 0)] * (n + 1)
+    for i in range(n):
+        mt[i] = best(i)
+        if i + 4 <= n: chains.setdefault(bytes(data[i:i + 4]), []).append(i)
+    # parcours optimal (programmation dynamique) : cout en octets, litteral = 1, copie = 3 (jeton + decalage) + 1 par 255 de longueur > 19
+    INF = 1 << 60
+    cost = [INF] * (n + 1); cost[n] = 0; nxt = [None] * (n + 1)
+    for i in range(n - 1, -1, -1):
+        cost[i] = cost[i + 1] + 1; nxt[i] = (1, 0)
+        l, o = mt[i]
+        for L in range(4, l + 1):
+            c = cost[i + L] + 3 + (L - 4 - 15) // 255 + 1 if L - 4 >= 15 else cost[i + L] + 3
+            if c <= cost[i]: cost[i] = c; nxt[i] = (L, o)
     def emit(lits, mlen, moff):
         tok = (min(len(lits), 15) << 4) | (0 if mlen == 0 else min(mlen - 4, 15))
         out.append(tok)
@@ -145,17 +156,12 @@ def lz_compress(data):
         out.extend(lits)
         out.append(moff & 255); out.append(moff >> 8)
         if mlen and mlen - 4 >= 15: out.extend(ext(mlen - 4 - 15))
+    i = 0; lit0 = 0
     while i < n:
-        l, o = best(i)
-        if l >= 4:
-            l2, o2 = best(i + 1)          # paresse : une copie plus longue juste apres ?
-            if l2 > l: add(i); i += 1; continue
-            emit(data[lit0:i], l, o)
-            for k in range(i, i + l): add(k)
-            i += l; lit0 = i
-        else:
-            add(i); i += 1
-    emit(data[lit0:n], 0, 0)               # derniers litteraux + marque de fin (decalage 0)
+        L, o = nxt[i]
+        if L == 1: i += 1; continue
+        emit(data[lit0:i], L, o); i += L; lit0 = i
+    emit(data[lit0:n], 0, 0)
     return bytes(out)
 
 def lz_decompress(comp, expect=None):
@@ -301,7 +307,7 @@ ZONES = [
             dict(unit=3, x=46, y=148, walk=True)]),
     # Zone 4 "Twin roads" (cahier des charges de la zone 4) : les ennemis sortent des vehicules (veh : 1 = camion de troupes, mission a quota ou chrono ; 2 = camion, barre de vie, victoire
     #   normale ; 3 = WarTruck, barre de vie, rafales, fin de zone). 'units' = unites transportees au maximum a l'ecran ; hp = points de vie du vehicule (kills = hp pour les modes 2 et 3)
-    _m(1, 6, [(1, 100)], kills=50, zn=4, veh=2, hp=50, text=['DESTROY THE', 'ARMY TRUCK !'], show_units=False,
+    _m(1, 5, [(1, 100)], kills=50, zn=4, veh=2, hp=50, text=['DESTROY THE', 'ARMY TRUCK !'], show_units=False,
        art=[dict(unit=1, x=16, y=148, walk=True), dict(unit=1, x=26, y=148, walk=True),
             dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
             dict(unit=1, x=48, y=148, walk=True), dict(unit=1, x=58, y=148, walk=True)]),
@@ -310,12 +316,12 @@ ZONES = [
             dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=33, y=136, walk=True),
             dict(png='Z80_12x12.png', fw=12, fh=12, frames=1, x=47, y=148, walk=True),
             dict(unit=2, x=56, y=148, walk=True)]),
-    _m(3, 6, [(2, 100)], time=40, zn=4, veh=1, show_units=False,
+    _m(3, 5, [(2, 100)], time=40, zn=4, veh=1, show_units=False,
        art=[dict(unit=2, x=16, y=148, walk=True), dict(unit=2, x=26, y=148, walk=True),
             dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
             dict(unit=2, x=48, y=148, walk=True), dict(unit=2, x=58, y=148, walk=True)]),
     # Mission finale : le WarTruck (60 PV, rafales de 3 balles dans les 4 directions) + ses soldats
-    _m(4, 6, [(1, 100)], kills=60, zn=4, veh=3, hp=60, text=['DESTROY THE', 'WAR TRUCK !'], show_units=False,
+    _m(4, 5, [(1, 100)], kills=60, zn=4, veh=3, hp=60, text=['DESTROY THE', 'WAR TRUCK !'], show_units=False,
        art=[dict(unit=1, x=16, y=148, walk=True), dict(unit=1, x=26, y=148, walk=True),
             dict(png='WarTruck_24x96.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
             dict(unit=1, x=48, y=148, walk=True), dict(unit=1, x=58, y=148, walk=True)]),

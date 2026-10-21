@@ -1,59 +1,59 @@
 ; --- genere par tools/convert.py : repertoire des zones (piste, secteur, nombre de secteurs, adresse de lecture) ---
 zone_dir:
  db 12,0,7
- dw #55BE
+ dw #55E7
  db 0
  db 12,7,7
- dw #55C0
+ dw #55E9
  db 0
  db 13,5,7
- dw #55BC
+ dw #55E5
  db 0
  db 14,3,7
- dw #561B
+ dw #5642
  db 0
  db 15,1,11
- dw #6732
+ dw #6779
  db 0
  db 16,3,8
- dw #62D3
+ dw #631B
  db 0
  db 17,2,8
- dw #62D8
+ dw #631B
  db 0
  db 18,1,8
- dw #62D2
+ dw #6318
  db 0
  db 19,0,8
- dw #632E
+ dw #6374
  db 0
  db 19,8,12
- dw #6672
+ dw #66E0
  db 0
  db 21,2,10
- dw #608A
+ dw #60DB
  db 0
  db 22,3,10
- dw #60AD
+ dw #60F3
  db 0
  db 23,4,10
- dw #60DD
+ dw #6130
  db 0
  db 24,5,10
- dw #607F
+ dw #60CF
  db 0
  db 25,6,13
- dw #61B4
+ dw #6213
  db 0
  db 27,1,7
- dw #5802
+ dw #582C
  db 0
  db 27,8,7
- dw #584A
+ dw #587C
  db 0
  db 28,6,7
- dw #57EA
+ dw #5820
  db 0
  db 29,4,7
- dw #57FD
+ dw #5827
  db 0

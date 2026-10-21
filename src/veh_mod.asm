@@ -54,7 +54,6 @@ mv_tick:    ld a,(p_state)
             call mv_flash
             call mv_truck
             call mv_contact
-            call mv_crush
             call mv_fx
             call mv_flames
             ld a,(frame)
@@ -82,34 +81,6 @@ mv_contact: ld a,(v_act)
             cp 35
             ret nc
             jp player_hit
-
-; le vehicule ecrase les ennemis vivants qu'il touche
-mv_crush:   ld a,(v_act)
-            or a
-            ret z
-            ld a,(v_xo)
-            ld c,a
-            ld a,(v_y)
-            ld b,a
-            ld ix,enemies
-            ld de,ESIZE
-            ld h,MAXENEMY
-.l          ld a,(ix+E_STATE)
-            dec a
-            jr nz,.n
-            call mv_ovl
-            jr nc,.n
-            push bc
-            push de
-            push hl
-            call enemy_kill_now
-            pop hl
-            pop de
-            pop bc
-.n          add ix,de
-            dec h
-            jr nz,.l
-            ret
 
 ; (IX+1, IX+2) = (x, y) dans le rectangle du camion (C = xo, B = y) ? carry si oui
 mv_ovl:     ld a,(ix+1)
@@ -409,7 +380,19 @@ mv_draw:    call mv_image
             jr z,.nodraw
             jr c,.nodraw
             ld d,a
-            ld a,(v_y)
+            ld a,(nw_hi)                ; camion encore visible : effacement et dessin ligne par ligne (peu de flicker)
+            ld hl,nw_lo
+            cp (hl)
+            jr z,.full
+            jr c,.full
+            ld a,b
+            ld (ud_x),a
+            ld a,d
+            ld (ud_w),a
+            ld a,1
+            ld (il_on),a
+            jr .nodraw
+.full       ld a,(v_y)
             ld c,a
             ld e,24
             call b1_restore
@@ -450,11 +433,43 @@ mv_paint:   ld a,(nw_hi)                ; le sprite : colonnes visibles [nw_lo, 
             ld b,a
             ld a,(v_y)
             ld c,a
+            ld hl,mv_blit
             ld a,(v_fl)
             or a
-            jr z,.nw
-            jp mv_blitw                 ; flash : tous les pixels opaques en blanc
-.nw         jp mv_blit
+            jr z,.q
+            ld hl,mv_blitw              ; flash : tous les pixels opaques en blanc
+.q          ld a,(il_on)
+            or a
+            jr nz,mv_il
+            jp (hl)
+
+; effacement (union des rectangles) et dessin, une ligne a la fois : le decor n'est visible qu'un instant par ligne
+mv_il:      ld (il_fn),hl
+            xor a
+            ld (il_on),a
+            ld a,24
+            ld (il_n),a
+.l          push bc
+            push de
+            ld a,(ud_w)
+            or a
+            jr z,.nr
+            ld d,a
+            ld a,(ud_x)
+            ld b,a
+            ld e,1
+            call b1_restore
+.nr         pop de
+            pop bc
+            ld a,1
+            ld (bl_h),a
+            ld hl,(il_fn)
+            call .j
+            ld hl,il_n
+            dec (hl)
+            jr nz,.l
+            ret
+.j          jp (hl)
             ret                         ; le camion est prioritaire : rien ne le recouvre (mv_late)
 
 ; efface le camion (rectangle affiche) et reveille les ennemis dessous
@@ -1249,4 +1264,9 @@ mx_c        ds 1
 my_c        ds 1
 v_fxs       ds 9
 v_bar       ds NBAR*BARSZ
+il_on       ds 1
+il_fn       ds 2
+il_n        ds 1
+ud_x        ds 1
+ud_w        ds 1
 mv_vars_end:

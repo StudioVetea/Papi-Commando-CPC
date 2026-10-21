@@ -988,3 +988,9 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Ecrasement** : tout ennemi vivant touche par le rectangle du vehicule meurt (`mv_crush`, `enemy_kill_now` : points comptes, quota Z80 compris).
 - **Priorite d'affichage** : le vehicule n'est plus recouvert (`mv_wake` n'est plus appele apres son dessin). Nouveau crochet de fin d'image (`ld a,5 / call veh_if` apres `crate_draw`) : `mv_late` repeint le camion (`mv_paint`, sans effacement) seulement si un ennemi ou une balle chevauche son rectangle. Les explosions de grenades ne sont pas testees (place).
 - **Banque 7** : `VOICE_OFF` = #B80 ; compresseur LZ ameliore (recherche plus profonde) : 8188 / 8192 octets.
+
+### v56 : sans ecrasement, 5 ennemis maxi, moins de flicker, moteur allege
+- **Ecrasement supprime** (`mv_crush` retire : gain de temps et de place).
+- **5 ennemis au maximum** en presence des vehicules (zone 4 : `units` = 5 pour les 4 missions ; casernes et camion partagent ce maximum).
+- **Flicker** : le camion est maintenant efface et redessine **ligne par ligne** (`mv_il` : `b1_restore` d'une ligne puis blit de cette ligne), au lieu d'effacer tout le rectangle puis de dessiner ; le decor n'est plus visible qu'un instant par ligne.
+- **Moteur** : compresseur LZ a parcours optimal (programmation dynamique, `lz_compress`) : toute la disquette est un peu plus petite ; banque 7 = 8182 / 8192 octets.
