@@ -743,7 +743,9 @@ mv_war:     ld a,(p_state)
             jr nz,mv_shoot
             ld a,V_BDELAY
             ld (v_bcd),a
-; vise Papi dans les 4 directions : horizontal si 3 |dx| >= |dy|, sinon vertical
+            jp mv_shoot                 ; derniere balle de la rafale
+; vise Papi dans les 4 directions : Papi a plus de 8 lignes sous le camion = bas, a plus de 8 au-dessus = haut,
+; sinon horizontal (droite si Papi est a droite du camion, gauche sinon)
 mv_aim:     ld a,(v_xo)
             sub TW/2
             ld b,a
@@ -757,25 +759,9 @@ mv_aim:     ld a,(v_xo)
             add a,6
             sub c
             ld c,a                      ; dy
-            ld a,b
-            or a
-            jp p,.p1
-            neg
-.p1         ld l,a
-            ld h,0
-            ld d,h
-            ld e,l
-            add hl,hl
-            add hl,de
-            ld a,c
-            or a
-            jp p,.p2
-            neg
-.p2         ld e,a
-            ld d,0
-            or a
-            sbc hl,de
-            jr c,.v
+            add a,8
+            cp 17
+            jr nc,.v
             ld a,b
             rlca
             and 1

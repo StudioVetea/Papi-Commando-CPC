@@ -1034,3 +1034,9 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 ### v64 : WarTruck, un tir toutes les 0,5 s (essai)
 - Plus de rafale : **1 balle toutes les ~0,5 s** (`V_BURST` = 1, `V_BDELAY` = 23). Pour revenir aux rafales de 3 toutes les 2 s : `V_BURST` = 3, `V_BDELAY` = 88.
 - **Mesures** (bot, 1000 images) : M4 graine 2 : 49,6 fps (max 26,5 ms) ; M4 graine 3 : 48,0 fps (max 31 ms) ; M1 graine 2 : 49,7 fps ; M1 graine 3 : 47,4 fps (max 30 ms). Banque 7 : 8184 / 8192.
+
+### v65 : balle du WarTruck visible, nouvelle regle de visee
+- **BUG CORRIGE : la balle du WarTruck n'apparaissait pas.** Depuis la v61, la derniere balle de chaque rafale n'etait jamais tiree (le code retombait sur `mv_aim` au lieu de `mv_shoot`) : avec 1 balle par tir, plus aucune balle. Corrige (`jp mv_shoot`).
+- **Visee** : Papi a plus de 8 lignes **sous** le centre du camion = tir en bas ; a plus de 8 lignes **au-dessus** = tir en haut ; sinon (entre -8 et +8) tir a droite si Papi est a droite du camion, a gauche sinon.
+- Cadence : 1 balle toutes les ~0,5 s (`V_BURST` = 1, `V_BDELAY` = 23).
+- **Mesures** (bot, 1000 images) : M4 graine 2 : 49,0 fps (max 30 ms) ; graine 3 : 48,1 fps (max 25 ms) ; M1 : 49,7 fps. Banque 7 : 8164 / 8192.
