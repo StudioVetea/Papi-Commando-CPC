@@ -1043,3 +1043,8 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 
 ### v66 : vehicules de l'ecran de mission tournes vers la droite
 - Sur les ecrans de presentation des missions de la zone 4 (ArmyTruck x3, WarTruck), le vehicule arrive de la gauche (vers la droite) mais etait dessine cabine a gauche. Ajout de l'option `flip=True` aux images `art` de `convert.py` (miroir de chaque image) : les 4 vehicules sont maintenant tournes vers la droite. Aucun changement de code ni de taille (banque 7 : 8164 / 8192).
+
+### v67 : logo du studio au demarrage
+- Au lancement : le **logo du studio** (`assets/Logo.png`, 160 x 200, 16 couleurs maxi, compresse : 5 secteurs, piste 12) s'affiche, puis le mot **PRESENTS** apparait sous "VETEA" avec le **jingle ZONE CLEAR** ; 2 secondes plus tard la cover (image Papi Commando) est chargee, la voix numerisee est jouee et le menu principal arrive comme avant.
+- Position du mot : `PRES_X` (octet) et `PRES_Y` (ligne) dans `tools/convert.py` ; le mot est dessine avec la police du jeu en double taille (6 x 10 pixels par lettre), stylos du noir et du blanc du logo (calcules automatiquement). Pour changer le logo : remplacer `assets/Logo.png` et ajuster `PRES_X` / `PRES_Y`.
+- Le logo actuel est une image provisoire (copie d'ecran avec bandeau "COMMOSTRAD 64K" en bas).

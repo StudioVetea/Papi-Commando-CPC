@@ -382,8 +382,8 @@ def slot_addr(u):
         return XSLOT_BASE + (u - 8 * SPRSLOT) * 144
     return 0x8000 + (u // SPRSLOT) * 0x800 + (u % SPRSLOT) * 144
 
-def build_cover():
-    im = Image.open(os.path.join(A, 'CoverMode0.png')).convert('RGB')
+def build_cover(png='CoverMode0.png'):
+    im = Image.open(os.path.join(A, png)).convert('RGB')
     assert im.size == (160, 200), 'cover attendue : 160 x 200'
     px = im.load()
     from collections import Counter
@@ -397,6 +397,30 @@ def build_cover():
             data[(y >> 3) * 80 + (y & 7) * 0x800 + xb] = enc(pen[px[2 * xb, y]], pen[px[2 * xb + 1, y]])
     pal = [HW[fw_of(c)] for c in order] + [HW[0]] * (16 - len(order)) + [HW[0]]
     return bytes(data), pal, order
+
+PRES_TEXT = 'PRESENTS'
+PRES_X = 24          # octet de depart du mot "PRESENTS" sous le logo (centre : 40 - 4 * lettres / 2) ; a ajuster si le logo change
+PRES_Y = 112         # ligne de depart (le mot fait 10 lignes de haut)
+def build_logo_text(order):
+    """le mot PRESENTS (police 3x5 doublee : 6 x 10 pixels, case de 8 pixels) en octets MODE 0 : (adresse ecran, 32 octets) par ligne.
+       Fond : stylo du noir du logo ; lettres : stylo du blanc (ou du plus clair)"""
+    lum = lambda c: sum(c)
+    bg = min(range(len(order)), key=lambda i: lum(order[i]))
+    fg = max(range(len(order)), key=lambda i: lum(order[i]))
+    n = len(PRES_TEXT)
+    rows = []
+    for y in range(10):
+        px = []
+        for ch in PRES_TEXT:
+            g = FONT[ch]
+            for gx in range(3):
+                v = fg if g[(y // 2) * 3 + gx] == '1' else bg
+                px += [v, v]
+            px += [bg, bg]
+        data = [enc(px[i], px[i + 1]) for i in range(0, len(px), 2)]
+        yy = PRES_Y + y
+        rows.append((0xC000 + (yy >> 3) * 80 + (yy & 7) * 0x800 + PRES_X, data))
+    return rows
 
 def _stack(names, tag):
     """un ou plusieurs PNG 48 x 80 (40 tuiles chacun) empiles verticalement -> nom du PNG a lire (tuile n de la pile : colonne n % 4, ligne n // 4)"""
@@ -930,11 +954,24 @@ def main():
     with open(os.path.join(ROOT, 'src', 'cover.inc'), 'w') as f:
         f.write('; --- genere par tools/convert.py ---\ncover_pal:  ; 16 encres + bordure (numeros materiels)\n')
         db(f, cpal)
+    logo, lpal, lorder = build_cover('Logo.png')
+    lcomp = lz_compress(logo); assert lz_decompress(lcomp) == logo
+    lfile = pad_sectors(lcomp)
+    with open(os.path.join(ROOT, 'src', 'cover.inc'), 'a') as f:
+        f.write('logo_pal:   ; logo du studio (affiche avant la cover)\n')
+        db(f, lpal)
+        f.write('logo_text:  ; "%s" : 10 lignes de (adresse ecran, 32 octets)\n' % PRES_TEXT)
+        for ad, data in build_logo_text(lorder):
+            f.write(' dw #%04X\n' % ad); db(f, data, 32)
     trk = COVER_TRK
     layout = {'cover': dict(track=trk, data=len(cfile))}
     open(os.path.join(BUILD, 'cover.bin'), 'wb').write(cfile)
     cover_trk, cover_n = trk, len(cfile) // 512
     trk += (cover_n + 8) // 9
+    layout['logo'] = dict(track=trk, data=len(lfile))
+    open(os.path.join(BUILD, 'logo.bin'), 'wb').write(lfile)
+    logo_trk, logo_n = trk, len(lfile) // 512
+    trk += (logo_n + 8) // 9
     zdir = []; info = []
     zpos = trk * 9                                   # les zones sont rangees a la suite, secteur par secteur (le chargeur sait partir d'un secteur quelconque)
     for zi, z in enumerate(ZONES):
@@ -987,6 +1024,7 @@ def main():
     with open(os.path.join(ROOT, 'src', 'layout.inc'), 'w') as f:
         f.write('; --- genere par tools/convert.py : disposition de la disquette et de la zone de preparation ---\n')
         f.write('COVER_TRK    equ %d\nCOVER_SEC    equ 0\nCOVER_N      equ %d\nCOVER_LOAD   equ #%04X\n' % (cover_trk, cover_n, COVER_LOAD))
+        f.write('LOGO_TRK     equ %d\nLOGO_N       equ %d\n' % (logo_trk, logo_n))
         f.write('NZONES       equ %d\nZSTAGE       equ #%04X\n' % (len(ZONES), ZSTAGE))
         f.write('Z_SPAWN      equ %d\nZ_TILEMAP    equ %d\nZ_TKIND      equ %d\nZ_FRAMES     equ %d\nZ_TILES      equ %d\nZ_SPR        equ %d\n' % (Z_SPAWN, Z_TILEMAP, Z_TKIND, Z_FRAMES, Z_TILES, Z_SPR))
         f.write('TILE_BASE    equ #%04X\nZSPR_DST     equ #%04X\nZSPR_C       equ %d\nWHITE        equ #%02X\n' % (slot_addr(SLOT0_ZONE - 1), slot_addr(SLOT0_ZONE), SPRSLOT - SLOT0_ZONE % SPRSLOT, enc(13, 13)))
@@ -996,6 +1034,7 @@ def main():
     with open(os.path.join(ROOT, 'src', 'zones.inc'), 'w') as f:
         f.write('; --- genere par tools/convert.py : repertoire des zones (piste, secteur, nombre de secteurs, adresse de lecture) ---\nzone_dir:\n')
         for t, sc, n, la in zdir: f.write(' db %d,%d,%d\n dw #%04X\n db 0\n' % (t, sc, n, la))
+    print('logo : 16384 -> %d octets (%d secteurs, piste %d)' % (len(lcomp), logo_n, logo_trk))
     print('cover : 16384 -> %d octets (%d secteurs, piste %d)' % (len(ccomp), cover_n, cover_trk))
     for l in info: print(l)
     print('residents : %d images (Papi + explosions)' % len(uniq))

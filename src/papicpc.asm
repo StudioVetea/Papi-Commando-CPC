@@ -5404,7 +5404,7 @@ boot:
             ld (spawn_n),a
             ld bc,#7F8C                 ; MODE 0, ROM haute et basse coupees
             out (c),c
-            ld hl,cover_pal             ; palette de la cover
+            ld hl,black_pal             ; ecran noir jusqu'a l'affichage du logo
             call set_palette
             ld hl,spr_papi              ; sprites de Papi et explosions (fin du fichier) -> 3 premiers trous de la page A
             ld de,#8000
@@ -5447,14 +5447,66 @@ boot:
             call OVLB
             jp nz,no128
             call fdc_on                 ; le moteur reste en marche : la zone se chargera des l'appui sur tir
+            ld a,LOGO_TRK               ; --- le logo du studio, puis "PRESENTS" avec le jingle de fin de mission
+            ld b,0
+            ld de,LOGO_N
+            ld hl,COVER_LOAD
+            call load_data
+            ld hl,COVER_LOAD
+            ld de,#C000
+            call unpack
+            ld hl,logo_pal
+            call set_palette
+            xor a                       ; sons a zero (variables non initialisees au demarrage)
+            ld (snd_a),a
+            ld (snd_b),a
+            ld (snd_c),a
+            ld (snd_z),a
+            ld (snd_p),a
+            ld (snd_u),a
+            ld (snd_bs),a
+            dec a
+            ld (snd_mix),a              ; (valeur impossible : le melangeur est ecrit a la premiere image)
+            ld hl,logo_text             ; le mot, ligne par ligne
+            ld b,10
+.pl         push bc
+            ld e,(hl)
+            inc hl
+            ld d,(hl)
+            inc hl
+            ld bc,32
+            ldir
+            pop bc
+            djnz .pl
+            ld a,10                     ; jingle ZONE CLEAR
+            call sfx
+            ld bc,100                   ; le logo reste 2 secondes (le jingle dure 64 images)
+.lw         push bc
+            ld b,#F5
+.l1         in a,(c)
+            rra
+            jr c,.l1
+.l2         in a,(c)
+            rra
+            jr nc,.l2
+            call sound_update
+            pop bc
+            dec bc
+            ld a,b
+            or c
+            jr nz,.lw
             ld a,COVER_TRK
             ld b,COVER_SEC
             ld de,COVER_N
             ld hl,COVER_LOAD
-            call load_data              ; la cover (compressee) est lue puis decompressee dans l'ecran
+            call load_data              ; la cover (compressee) est lue (le logo reste a l'ecran)...
+            ld hl,black_pal
+            call set_palette
             ld hl,COVER_LOAD
             ld de,#C000
-            call unpack
+            call unpack                 ; ... puis decompressee dans l'ecran
+            ld hl,cover_pal
+            call set_palette
             call OVLB+(ovlb_load-ovlb_src)  ; les ecrans (menu, missions, game over, Hall of Fame) : lus UNE fois, dans les banques 4, 5 et 6
             call OVLB+(ovlb_voice-ovlb_src) ; la voix numerisee (banque 7) : « Papi Commando CPC ! », ~2,4 s, jeu fige
             ld bc,50*5-VOICE_FR         ; la cover reste a l ecran 5 secondes au total (250 images), puis le menu principal
