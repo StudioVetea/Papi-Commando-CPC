@@ -13,7 +13,7 @@
 ;   Le module ne voit pas le miroir (banque 1) : il efface par la rampe b1_restore et dessine par-dessus (ecran) ; b1_wtr dessine une tuile (ecran ET miroir).
 ;   Appele par veh_call (boss.asm) : A = 1 image, 2 balle de Papi (IX), 3 explosion de grenade, 4 case de bidon touchee (HL).  IX et IY conserves.
 ;==============================================================================
-V_Y0        equ 32              ; y du haut du camion sur la route de la rangee 6 (le bas du camion = le bas de la route : 8 x 7 - 24)
+V_Y0        equ 56              ; y du haut du camion sur la route de la rangee 6 (le bas du camion = le bas de la route : 8 x 7 - 24)
 V_Y1        equ 128             ; ... et de la rangee 18
 V_SPEED     equ 179             ; 179/256 = 0,70 octet par image = 2 x Papi (PSPEED_X = 90)
 V_HP        equ 50              ; points de vie du camion de troupes quand ce n'est pas la mission du camion
@@ -38,16 +38,7 @@ mv_disp:    dec a
             jp z,mv_bullet
             dec a
             jp z,mv_gren
-            dec a
-            jp z,mv_barrel
-; 5 : fin d'image : le camion de la route du haut est dessine ici (le faisceau est deja plus bas)
-mv_late:    ld a,(v_act)
-            or a
-            ret z
-            ld a,(v_y)
-            cp V_Y0
-            ret nz
-            jp mv_drawcheck
+            jp mv_barrel
 
 mv_tick:    ld a,(p_state)
             cp 3
@@ -203,11 +194,7 @@ mv_truck:   ld a,(v_act)
 .left       dec a
             ld (v_xo),a
             jr z,.leave
-.mv         ld a,(v_y)                  ; route du haut : le faisceau y passe juste apres le debut de l'image, pendant qu'on dessine : on dessine en fin d'image (mv_late)
-            cp V_Y1
-            call z,mv_drawcheck
-            ld a,1
-            ld (v_late),a
+.mv         call mv_drawcheck
             ld a,(veh_on)
             and 7
             cp 3
