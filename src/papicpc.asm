@@ -5467,6 +5467,20 @@ boot:
             ld (snd_bs),a
             dec a
             ld (snd_mix),a              ; (valeur impossible : le melangeur est ecrit a la premiere image)
+            ld bc,50                    ; le logo seul pendant 1 seconde
+.l0         push bc
+            ld b,#F5
+.l01        in a,(c)
+            rra
+            jr c,.l01
+.l02        in a,(c)
+            rra
+            jr nc,.l02
+            pop bc
+            dec bc
+            ld a,b
+            or c
+            jr nz,.l0
             ld hl,logo_text             ; le mot, ligne par ligne
             ld b,10
 .pl         push bc
@@ -5480,7 +5494,7 @@ boot:
             djnz .pl
             ld a,10                     ; jingle ZONE CLEAR
             call sfx
-            ld bc,100                   ; le logo reste 2 secondes (le jingle dure 64 images)
+            ld bc,200                   ; puis 4 secondes avant la cover (le jingle dure 64 images)
 .lw         push bc
             ld b,#F5
 .l1         in a,(c)

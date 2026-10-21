@@ -1048,3 +1048,7 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - Au lancement : le **logo du studio** (`assets/Logo.png`, 160 x 200, 16 couleurs maxi, compresse : 5 secteurs, piste 12) s'affiche, puis le mot **PRESENTS** apparait sous "VETEA" avec le **jingle ZONE CLEAR** ; 2 secondes plus tard la cover (image Papi Commando) est chargee, la voix numerisee est jouee et le menu principal arrive comme avant.
 - Position du mot : `PRES_X` (octet) et `PRES_Y` (ligne) dans `tools/convert.py` ; le mot est dessine avec la police du jeu en double taille (6 x 10 pixels par lettre), stylos du noir et du blanc du logo (calcules automatiquement). Pour changer le logo : remplacer `assets/Logo.png` et ajuster `PRES_X` / `PRES_Y`.
 - Le logo actuel est une image provisoire (copie d'ecran avec bandeau "COMMOSTRAD 64K" en bas).
+
+### v68 : PRESENTS sous "ONEBROU CORP." et nouveau minutage
+- Le mot **PRESENTS** est maintenant sous "ONEBROU CORP." (`PRES_Y` = 143).
+- Minutage : logo seul 1 s, puis PRESENTS + jingle ZONE CLEAR, puis 4 s plus tard la cover, la voix et le menu (constantes 50 et 200 images dans `boot`, `src/papicpc.asm`).

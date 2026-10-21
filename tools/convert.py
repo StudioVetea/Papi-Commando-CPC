@@ -399,8 +399,8 @@ def build_cover(png='CoverMode0.png'):
     return bytes(data), pal, order
 
 PRES_TEXT = 'PRESENTS'
-PRES_X = 24          # octet de depart du mot "PRESENTS" sous le logo (centre : 40 - 4 * lettres / 2) ; a ajuster si le logo change
-PRES_Y = 112         # ligne de depart (le mot fait 10 lignes de haut)
+PRES_X = 24          # octet de depart du mot "PRESENTS" sous "ONEBROU CORP." (centre : 40 - 4 * lettres / 2) ; a ajuster si le logo change
+PRES_Y = 143         # ligne de depart (le mot fait 10 lignes de haut) : sous "ONEBROU CORP."
 def build_logo_text(order):
     """le mot PRESENTS (police 3x5 doublee : 6 x 10 pixels, case de 8 pixels) en octets MODE 0 : (adresse ecran, 32 octets) par ligne.
        Fond : stylo du noir du logo ; lettres : stylo du blanc (ou du plus clair)"""
