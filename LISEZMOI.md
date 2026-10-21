@@ -1040,3 +1040,6 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Visee** : Papi a plus de 8 lignes **sous** le centre du camion = tir en bas ; a plus de 8 lignes **au-dessus** = tir en haut ; sinon (entre -8 et +8) tir a droite si Papi est a droite du camion, a gauche sinon.
 - Cadence : 1 balle toutes les ~0,5 s (`V_BURST` = 1, `V_BDELAY` = 23).
 - **Mesures** (bot, 1000 images) : M4 graine 2 : 49,0 fps (max 30 ms) ; graine 3 : 48,1 fps (max 25 ms) ; M1 : 49,7 fps. Banque 7 : 8164 / 8192.
+
+### v66 : vehicules de l'ecran de mission tournes vers la droite
+- Sur les ecrans de presentation des missions de la zone 4 (ArmyTruck x3, WarTruck), le vehicule arrive de la gauche (vers la droite) mais etait dessine cabine a gauche. Ajout de l'option `flip=True` aux images `art` de `convert.py` (miroir de chaque image) : les 4 vehicules sont maintenant tournes vers la droite. Aucun changement de code ni de taille (banque 7 : 8164 / 8192).

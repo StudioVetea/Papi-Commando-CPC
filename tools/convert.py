@@ -309,21 +309,21 @@ ZONES = [
     #   normale ; 3 = WarTruck, barre de vie, rafales, fin de zone). 'units' = unites transportees au maximum a l'ecran ; hp = points de vie du vehicule (kills = hp pour les modes 2 et 3)
     _m(1, 5, [(1, 100)], kills=50, zn=4, veh=2, hp=50, text=['DESTROY THE', 'ARMY TRUCK !'], show_units=False,
        art=[dict(unit=1, x=16, y=148, walk=True), dict(unit=1, x=26, y=148, walk=True),
-            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
+            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, flip=True, x=34, y=136, walk=True),
             dict(unit=1, x=48, y=148, walk=True), dict(unit=1, x=58, y=148, walk=True)]),
     _m(2, 5, [(2, 100)], kills=15, count=(2,), zn=4, veh=1, z80=1, text=['FIND THE Z80 !'], show_units=False,
        art=[dict(unit=2, x=14, y=148, walk=True), dict(unit=2, x=24, y=148, walk=True),
-            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=33, y=136, walk=True),
+            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, flip=True, x=33, y=136, walk=True),
             dict(png='Z80_12x12.png', fw=12, fh=12, frames=1, x=47, y=148, walk=True),
             dict(unit=2, x=56, y=148, walk=True)]),
     _m(3, 5, [(2, 100)], time=40, zn=4, veh=1, show_units=False,
        art=[dict(unit=2, x=16, y=148, walk=True), dict(unit=2, x=26, y=148, walk=True),
-            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
+            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, flip=True, x=34, y=136, walk=True),
             dict(unit=2, x=48, y=148, walk=True), dict(unit=2, x=58, y=148, walk=True)]),
     # Mission finale : le WarTruck (60 PV, rafales de 3 balles dans les 4 directions) + ses soldats
     _m(4, 5, [(1, 100)], kills=60, zn=4, veh=3, hp=60, text=['DESTROY THE', 'WAR TRUCK !'], show_units=False,
        art=[dict(unit=1, x=16, y=148, walk=True), dict(unit=1, x=26, y=148, walk=True),
-            dict(png='WarTruck_24x96.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
+            dict(png='WarTruck_24x96.png', fw=24, fh=24, frames=1, flip=True, x=34, y=136, walk=True),
             dict(unit=1, x=48, y=148, walk=True), dict(unit=1, x=58, y=148, walk=True)]),
     # Images supplementaires de l'ecran de mission (boss, batiments...) : ajouter a _m(...) un argument  art=[...]  (et show_units=False pour ne pas afficher les ennemis) dont chaque element est
     #   dict(png='Boss.png', fw=36, fh=36, frames=4, x=30, y=110, walk=True)   image(s) cote a cote, fw x fh pixels (paire, 80 pixels maxi), 1, 2 ou 4 images
@@ -797,7 +797,7 @@ def build_intro():
             db(f, data, 16)
 
 ART_FRAME_MAX = 40       # largeur maxi d'une image (octets)
-def _png_frames(nm, fw, fh, nf):
+def _png_frames(nm, fw, fh, nf, flip=False):
     """image(s) PNG -> (octets de toutes les images, largeur en octets, hauteur) ; fw, fh en pixels (defaut : toute l'image), nf images cote a cote"""
     g = load(nm)
     H, Wd = len(g), len(g[0])
@@ -806,8 +806,10 @@ def _png_frames(nm, fw, fh, nf):
     data = []
     for a in range(nf):
         for y in range(fh):
+            row = g[y][a * fw:(a + 1) * fw]
+            if flip: row = row[::-1]                      # miroir (vehicules : l'image est dessinee vers la gauche, ils arrivent vers la droite)
             for x in range(0, fw, 2):
-                data.append(enc(g[y][a * fw + x] or 0, g[y][a * fw + x + 1] or 0))
+                data.append(enc(row[x] or 0, row[x + 1] or 0))
     return data, fw // 2, fh
 
 def _tile_block(tileset, rows):
@@ -849,7 +851,7 @@ def intro_items():
                 d, w, h = _tile_block(_stack(z['tileset'], z['name'] + '_ts'), a['tiles']); nf = 1
             else:
                 nf = a.get('frames', 1)
-                d, w, h = _png_frames(a['png'], a.get('fw'), a.get('fh'), nf)
+                d, w, h = _png_frames(a['png'], a.get('fw'), a.get('fh'), nf, a.get('flip', False))
             lab = 'intro_art%d_%d' % (zi, ai)
             blobs.append((lab, d))
             x = a['x'] if a.get('x') is not None else (79 - w) // 2          # centre par defaut
