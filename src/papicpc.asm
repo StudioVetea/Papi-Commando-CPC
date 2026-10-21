@@ -202,12 +202,8 @@ wait_end:
             inc (hl)
             call keyscan
             call wtr_tick               ; eau animee (zone 3) et vitesse de Papi dans l'eau : voir water.asm
-            ld a,(veh_on)               ; zone 4 : le vehicule (avant Papi, qui se redessine par-dessus) et les bidons
-            or a
-            jr z,.nv
-            ld a,1
-            call veh_call
-.nv
+            ld a,1                      ; zone 4 : le vehicule (avant Papi, qui se redessine par-dessus) et les bidons
+            call veh_if
             call player_update          ; d'abord ce qui doit rester a 50 Hz
             call time_tick              ; Time Attack : une seconde de moins toutes les 50 images
             ld a,(kills_left)
@@ -238,6 +234,8 @@ wait_end:
 .tl         ld (tick_lim),a
             call enemies_update         ; puis les ennemis, tant qu'il reste du temps
             call crate_draw             ; la caisse parachutee, en dernier : premier plan
+            ld a,5                      ; zone 4 : le camion de la route du haut se dessine en fin d'image (sinon il clignote : le faisceau passe pendant le dessin)
+            call veh_if
             jr .end
 .frozen     ld a,(fz_n)                 ; quelques images encore : les ennemis recouverts par Papi (son effacement a sa mort)
             or a                        ; se redessinent, car la scene figee ne les repare plus
@@ -1825,11 +1823,8 @@ bullet_vs_enemies:
 .n          ex af,af'
             dec a
             jr nz,.l
-            ld a,(veh_on)               ; aucun ennemi touche ; zone 4 : la balle touche-t-elle le vehicule ?
-            or a
-            ret z
-            ld a,2
-            jp veh_call
+            ld a,2                      ; aucun ennemi touche ; zone 4 : la balle touche-t-elle le vehicule ?
+            jp veh_if
 .touch      dec l
             dec l
             ld (ix+B_ON),2
@@ -3298,10 +3293,8 @@ grenade_update:
 .kn         ld de,ESIZE
             add ix,de
             djnz .k
-            ld a,(veh_on)               ; zone 4 : le vehicule et les bidons dans le souffle
-            or a
-            ld a,3
-            call nz,veh_call
+            ld a,3                      ; zone 4 : le vehicule et les bidons dans le souffle
+            call veh_if
             ld a,6
             jp sfx
 

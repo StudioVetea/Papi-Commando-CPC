@@ -43,6 +43,11 @@ bk_back:    ld bc,#7F00+GAME_CFG
             out (c),c
             ret
 ; zone 4 (vehicules) : A = fonction (1 image du vehicule, 2 balle de Papi, 3 explosion de grenade, 4 bidon touche), IX et HL conserves ; le code est dans la banque 7 (m_veh)
+veh_if:     ld c,a                      ; comme veh_call, mais seulement dans une zone a vehicules
+            ld a,(veh_on)
+            or a
+            ret z
+            ld a,c
 veh_call:   ld bc,#7F00+CFG_BOSS
             out (c),c
             call m_veh

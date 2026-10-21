@@ -647,7 +647,7 @@ def build_menu():
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
 VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0xA00                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
+VOICE_OFF = 0xA60                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
 def build_voice():
     """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
     PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
@@ -684,7 +684,7 @@ def build_voice():
     return len(packed)
 os.makedirs(os.path.join(ROOT, 'build'), exist_ok=True)
 VOICE_LEN = build_voice()
-TRUCK_OFF = (VOICE_OFF + VOICE_LEN + 255) // 256 * 256   # images des camions : apres la voix (banque 7)
+TRUCK_OFF = VOICE_OFF + VOICE_LEN   # images des camions : apres la voix (banque 7)
 BOSS_N = 16                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
 BOSS_PAD = 0x4000 - BOSS_N * 512                      # elle est lue en BOSS_LOAD + BOSS_PAD (derniers 8 Ko de la fenetre) puis decompressee sur place
 

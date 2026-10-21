@@ -38,7 +38,16 @@ mv_disp:    dec a
             jp z,mv_bullet
             dec a
             jp z,mv_gren
-            jp mv_barrel
+            dec a
+            jp z,mv_barrel
+; 5 : fin d'image : le camion de la route du haut est dessine ici (le faisceau est deja plus bas)
+mv_late:    ld a,(v_act)
+            or a
+            ret z
+            ld a,(v_y)
+            cp V_Y0
+            ret nz
+            jp mv_drawcheck
 
 mv_tick:    ld a,(p_state)
             cp 3
@@ -194,7 +203,11 @@ mv_truck:   ld a,(v_act)
 .left       dec a
             ld (v_xo),a
             jr z,.leave
-.mv         call mv_drawcheck
+.mv         ld a,(v_y)                  ; route du haut : le faisceau y passe juste apres le debut de l'image, pendant qu'on dessine : on dessine en fin d'image (mv_late)
+            cp V_Y1
+            call z,mv_drawcheck
+            ld a,1
+            ld (v_late),a
             ld a,(veh_on)
             and 7
             cp 3
@@ -213,8 +226,41 @@ mv_truck:   ld a,(v_act)
             jr z,.try
             dec (hl)
             ret
-.try        call mv_drop
-            ret nc
+.try        xor a
+            ld (v_got),a
+            ld a,3
+            ld (v_k),a
+.dk         ld a,(v_k)                  ; 3 unites a la suite, derriere le camion (x : 0 a 72)
+            dec a
+            ld c,a
+            add a,a
+            add a,a
+            add a,a
+            sub c                       ; 7 x k
+            ld c,a
+            ld a,(v_dir)
+            or a
+            ld a,(v_xo)
+            jr nz,.rl
+            sub 18                      ; vers la droite : l'arriere est a gauche
+            sub c
+            jr c,.nk
+            jr .xk
+.rl         inc a                       ; vers la gauche : l'arriere est a droite
+            add a,c
+            cp 73
+            jr nc,.nk
+.xk         ld (v_dxx),a
+            call mv_drop
+            jr nc,.nk
+            ld a,1
+            ld (v_got),a
+.nk         ld hl,v_k
+            dec (hl)
+            jr nz,.dk
+            ld a,(v_got)
+            or a
+            ret z
             ld a,V_DROP
             ld (v_dtim),a
             ret
@@ -422,8 +468,7 @@ mv_drop:    ld a,(nb_wanted)
             djnz .f
             or a
             ret
-.free       ld a,(v_xo)
-            sub 9
+.free       ld a,(v_dxx)
             ld b,a
             ld a,(v_y)
             add a,12
@@ -1050,6 +1095,10 @@ v_bn        ds 1
 v_bt        ds 1
 v_bcd       ds 1
 v_bi        ds 1
+v_dxx       ds 1
+v_k         ds 1
+v_got       ds 1
+v_late      ds 1
 v_nb        ds 1
 nw_lo       ds 1
 nw_hi       ds 1
