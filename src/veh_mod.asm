@@ -23,9 +23,9 @@ V_HP        equ 50              ; points de vie du camion de troupes quand ce n'
 V_DROP      equ 100             ; images entre deux unites larguees (2 s)
 V_XMAX      equ 90              ; x + 12 : la valeur 90 = tout juste sorti par la droite ; 0 = tout juste sorti par la gauche
 V_FLASH     equ 6               ; images de flash blanc quand le vehicule est touche
-V_BURST     equ 3
+V_BURST     equ 1
 V_BSPACE    equ 6
-V_BDELAY    equ 88
+V_BDELAY    equ 23
 NBAR        equ 8
 BARSZ       equ 6               ; case du haut (2), coups, etat (1 bidon, 2 en flammes), phase de la flamme affichee
 EXPL_DATA   equ TRUCK_DATA+10*TIMG
