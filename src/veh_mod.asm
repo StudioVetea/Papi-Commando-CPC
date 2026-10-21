@@ -25,7 +25,7 @@ V_XMAX      equ 90              ; x + 12 : la valeur 90 = tout juste sorti par l
 V_FLASH     equ 6               ; images de flash blanc quand le vehicule est touche
 V_BURST     equ 3
 V_BSPACE    equ 6
-V_BDELAY    equ 40
+V_BDELAY    equ 88
 NBAR        equ 8
 BARSZ       equ 6               ; case du haut (2), coups, etat (1 bidon, 2 en flammes), phase de la flamme affichee
 EXPL_DATA   equ TRUCK_DATA+10*TIMG
@@ -831,10 +831,7 @@ mv_shoot:   ld a,(v_aim)
             ld l,c
             ld a,(v_aim)
             call bullet_start
-            jr nz,.x
-            sra (ix+B_DX)               ; pas de la balle divise par deux (comme les balles des soldats)
-            sra (ix+B_DY)
-.x          pop ix
+            pop ix
             ret
 mv_ktab:    db 5,2, 1,2, 5,6, 5,4      ; par direction : decalage x, y du point de depart de la balle (apres soustraction du decalage de shot_tab)
 

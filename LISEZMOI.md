@@ -1021,3 +1021,8 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Bidon enflamme** : en explosant, il inflige **5 points de degats** a chaque ennemi proche (au lieu de le tuer d'un coup) ; un ennemi a 1-2 PV meurt toujours, un a plus de PV peut survivre.
 - **Banque 7** : explosion ramenee a **2 images** (au lieu de 3) pour liberer de la place ; `VOICE_OFF` = #C40, 8182 / 8192 octets compresses.
 - **Mesures** (bot, 1000 images, zone 4 M4) : ~46 fps (v60 : 47,8-49,4 sur les memes graines) ; plus de balles a l'ecran en meme temps = un peu plus de charge.
+
+### v62 : balles du WarTruck a vitesse normale, une rafale toutes les 2 s
+- La reduction de vitesse des balles (v61) coutait ~3 fps : **annulee**, les balles du WarTruck reprennent la vitesse d'avant.
+- Rafale de 3 balles toutes les **2 secondes** (`V_BDELAY` = 88).
+- **Mesures** (bot, 1000 images) : M4 graine 2 : 49,5 fps (max 23,7 ms) ; graine 3 : 46,9 fps (v60 : 47,8) ; M1 : 49,7 fps (max 27 ms). Banque 7 : 8179 / 8192.
