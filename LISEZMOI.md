@@ -1026,3 +1026,7 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - La reduction de vitesse des balles (v61) coutait ~3 fps : **annulee**, les balles du WarTruck reprennent la vitesse d'avant.
 - Rafale de 3 balles toutes les **2 secondes** (`V_BDELAY` = 88).
 - **Mesures** (bot, 1000 images) : M4 graine 2 : 49,5 fps (max 23,7 ms) ; graine 3 : 46,9 fps (v60 : 47,8) ; M1 : 49,7 fps (max 27 ms). Banque 7 : 8179 / 8192.
+
+### v63 : nouvelle explosion 10x10
+- `Explosion10x10.png` (4 images de 10 x 10) remplace `Explosion12x12.png` : chaque image est centree dans la case 12 x 12 du moteur (1 pixel transparent autour), sans changement de code. Concerne l'explosion des grenades (Papi, officiers), la mort du boss et l'explosion des bidons.
+- Pas de gain de vitesse : le moteur blitte toujours des cases de 6 octets x 12 lignes (une explosion n'est dessinee qu'une image sur 4). Fluidite mesuree inchangee (M4 : 49,5 fps). Banque 7 : 8186 / 8192.

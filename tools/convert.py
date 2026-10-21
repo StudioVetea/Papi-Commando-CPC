@@ -412,6 +412,16 @@ def _stack(names, tag):
 # palette de l'eau : le jeu n'a que 16 stylos (tous pris) ; les bleus clairs du dessin sont ramenes aux bleus existants en gardant le contraste :
 #   bleu ciel (fond) -> bleu vif, bleu vif (ondulations) -> bleu fonce, cyan et cyan clair (reflets) -> blanc ; (0,128,128) et (0,0,128) sont deja des stylos
 WATER_FW = {(0, 128, 255): 2, (0, 0, 255): 1, (0, 255, 255): 26, (128, 255, 255): 26, (0, 128, 128): 10, (0, 0, 128): 1}
+def load_expl():
+    """Explosion10x10.png (4 images de 10 x 10) -> grille 48 x 12 : chaque image est centree dans une case de 12 x 12 (transparente autour)"""
+    g = load('Explosion10x10.png')
+    out = [[None] * 48 for _ in range(12)]
+    for fr in range(4):
+        for y in range(10):
+            for x in range(10):
+                out[y + 1][fr * 12 + x + 1] = g[y][fr * 10 + x]
+    return out
+
 def load_water(name):
     im = Image.open(os.path.join(A, name)).convert('RGB')
     w, h = im.size; px = im.load()
@@ -712,7 +722,7 @@ def build_trucks():
                 opp = {0: 1, 1: 0, 2: 2, 3: 3}[aim]
                 out += img(mirror(w), 18 * frame[opp])
     assert len(out) == 10 * 396
-    ex = load('Explosion12x12.png')                       # 4 images d'explosion 12 x 12, memes octets que celles du moteur mais SANS l'ordre en zigzag (le module des vehicules les affiche ligne par ligne)
+    ex = load_expl()                       # 4 images d'explosion 12 x 12, memes octets que celles du moteur mais SANS l'ordre en zigzag (le module des vehicules les affiche ligne par ligne)
     for fr in (0, 2): out += masked(ex, fr * 12, 0, 12, 12)
     assert len(out) == 10 * 396 + 2 * 144
     open(os.path.join(BUILD, 'trucks.bin'), 'wb').write(bytes(out))
@@ -866,7 +876,7 @@ def main():
     global INTRO_N
     INTRO_N = intro_sectors()
     os.makedirs(BUILD, exist_ok=True)
-    papi = load('PapiCPC_12x12.png'); expl = load('Explosion12x12.png')
+    papi = load('PapiCPC_12x12.png'); expl = load_expl()
     gren = load('Grenade_4x6.png'); ball = load('Balle2x6.png'); ecl = load('EclatBalle_4x6.png')
     with open(OUT, 'w') as f:
         f.write('; --- genere par tools/convert.py : ne pas modifier a la main ---\n\n')
