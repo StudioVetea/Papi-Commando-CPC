@@ -257,13 +257,14 @@ m_hud_kills:
             ld (expand_glyph.b-1),a
             ret
 
+            include 'veh_mod.asm'
 ;------------------------------------------------------------------------------
 ; voix numerisee de l'intro (banque 7 aussi) : « Papi Commando CPC ! », echantillons 4 bits (2 par octet, poids fort d'abord) joues
 ; sur le canal A du PSG (registre 8 = volume, tons et bruit coupes). Interruptions coupees pendant la lecture (~2,4 s).
 ; Entree : m_voice (appelee par la rampe 'voice_play' du demarrage, miroir de la banque 1 non necessaire)
 ;------------------------------------------------------------------------------
-VOICE_DATA  equ BOSS_LOAD+#400
-VOICE_END   equ BOSS_LOAD+BOSS_N*512
+VOICE_DATA  equ BOSS_LOAD+VOICE_OFF
+VOICE_END   equ VOICE_DATA+VOICE_LEN
 VOICE_DELAY equ 35                      ; reglage de la cadence (~6 kHz), mesure a l'emulateur
 m_voice:    di
             ld bc,#F782                 ; PPI : port A en sortie
@@ -327,6 +328,5 @@ m_voice:    di
             ld bc,#F600
             out (c),c
             ret
-            assert $<=VOICE_DATA
-            ds VOICE_DATA-$
-            incbin '../build/voice.bin'      ; les echantillons (convert.py)
+            assert $<=VOICE_DATA                ; (la voix et les images des vehicules sont ajoutees apres le code par tools/mkdisk.py : build/boss_code.bin + voice.bin + trucks.bin)
+TRUCK_DATA  equ BOSS_LOAD+TRUCK_OFF

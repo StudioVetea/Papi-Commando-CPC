@@ -1,0 +1,1033 @@
+;==============================================================================
+;  VEHICULES DE LA ZONE 4 "TWIN ROADS" (banque 7, assemble pour #4000 avec le code du boss)
+;
+;   Camion de troupes (ArmyTruck) et WarTruck : sprite 24 x 24 (12 octets x 24 lignes), un seul vehicule a la fois, qui roule sur l'une des deux
+;   routes (rangees 6 et 18 de la carte), dans un sens ou dans l'autre tires au hasard, a 2 x la vitesse de Papi, puis ressort et revient
+;   apres une pause. Il largue un ennemi toutes les 2 s (sur une place libre), les ennemis de la mission ne viennent que de lui.
+;   Le WarTruck tire des rafales de 3 balles (classe de portee 5) dans les 4 directions, tour a tour (la tourelle tourne).
+;   Les bidons explosifs (case de la grille = 7 : obstacle comme une caserne) explosent au bout de 3 balles ou sous une grenade : 3 degats autour,
+;   puis deux flammes animees (case = 4) qui brulent quiconque les touche.
+;
+;   Mode (veh_on) : 1 camion de troupes, points de vie propres (V_HP), +500 points, un autre revient (missions Z80 et chrono) ;
+;                   2 camion, points de vie = kills_left (HUD en couleur), victoire normale ; 3 WarTruck, idem, fin de zone.
+;   Le module ne voit pas le miroir (banque 1) : il efface par la rampe b1_restore et dessine par-dessus (ecran) ; b1_wtr dessine une tuile (ecran ET miroir).
+;   Appele par veh_call (boss.asm) : A = 1 image, 2 balle de Papi (IX), 3 explosion de grenade, 4 case de bidon touchee (HL).  IX et IY conserves.
+;==============================================================================
+V_Y0        equ 32              ; y du haut du camion sur la route de la rangee 6 (le bas du camion = le bas de la route : 8 x 7 - 24)
+V_Y1        equ 128             ; ... et de la rangee 18
+V_SPEED     equ 179             ; 179/256 = 0,70 octet par image = 2 x Papi (PSPEED_X = 90)
+V_HP        equ 50              ; points de vie du camion de troupes quand ce n'est pas la mission du camion
+V_DROP      equ 100             ; images entre deux unites larguees (2 s)
+V_XMAX      equ 90              ; x + 12 : la valeur 90 = tout juste sorti par la droite ; 0 = tout juste sorti par la gauche
+V_BURST     equ 3
+V_BSPACE    equ 5
+V_BDELAY    equ 50
+NBAR        equ 8
+BARSZ       equ 6               ; case du haut (2), coups, etat (1 bidon, 2 en flammes), phase de la flamme affichee
+EXPL_DATA   equ TRUCK_DATA+10*576
+
+m_veh:      push ix
+            push iy
+            call mv_disp
+            pop iy
+            pop ix
+            ret
+mv_disp:    dec a
+            jp z,mv_tick
+            dec a
+            jp z,mv_bullet
+            dec a
+            jp z,mv_gren
+            jp mv_barrel
+
+mv_tick:    ld a,(p_state)
+            cp 3
+            ret z                       ; Papi entre : tout attend
+            cp 2
+            ret z                       ; scene figee
+            ld a,(v_init)
+            or a
+            call z,mv_init
+            call mv_truck
+            call mv_fx
+            call mv_flames
+            ld a,(frame)
+            and 3
+            ret nz
+            jp mv_hazard
+
+; preparation de la mission : variables, liste des bidons
+mv_init:    ld a,1
+            ld (v_init),a
+            ld hl,mv_vars
+            ld de,mv_vars+1
+            ld bc,mv_vars_end-mv_vars-1
+            ld (hl),0
+            ldir
+            ld a,#FF
+            ld (v_ox),a
+            ld a,V_HP
+            ld (v_hpt),a
+            ld a,120
+            ld (v_wait),a
+            ld a,60
+            ld (v_bcd),a
+            ld hl,GRID+16
+            ld de,v_bar
+            ld bc,384
+.sc         ld a,(hl)
+            and 7
+            cp 7
+            jr nz,.nx
+            push bc
+            push hl
+            ld bc,-16
+            add hl,bc
+            ld a,(hl)
+            pop hl
+            pop bc
+            and 7
+            cp 7
+            jr z,.nx                    ; la case du haut est aussi un bidon : celle-ci est le bas
+            ld a,(v_nb)
+            cp NBAR
+            jr nc,.nx
+            ld a,l                      ; entree : case du haut, coups = 0, etat 1, phase #FF
+            ld (de),a
+            inc de
+            ld a,h
+            ld (de),a
+            inc de
+            xor a
+            ld (de),a
+            inc de
+            inc a
+            ld (de),a
+            inc de
+            ld a,#FF
+            ld (de),a
+            inc de
+            inc de
+            ld a,(v_nb)
+            inc a
+            ld (v_nb),a
+.nx         inc hl
+            dec bc
+            ld a,b
+            or c
+            jr nz,.sc
+            ret
+
+
+;------------------------------------------------------------------------------
+; le vehicule
+;------------------------------------------------------------------------------
+mv_truck:   ld a,(v_act)
+            or a
+            jr nz,.run
+            ld hl,v_wait                ; hors de l'ecran : attente avant le prochain passage
+            ld a,(hl)
+            or a
+            jr z,.enter
+            dec (hl)
+            ret
+.enter      call rand                   ; route et sens au hasard
+            ld b,a
+            ld a,V_Y0
+            bit 0,b
+            jr z,.y
+            ld a,V_Y1
+.y          ld (v_y),a
+            ld a,0                      ; du bord gauche vers la droite...
+            ld c,0
+            bit 1,b
+            jr z,.d
+            ld a,V_XMAX                 ; ... ou du bord droit vers la gauche
+            ld c,1
+.d          ld (v_xo),a
+            ld a,c
+            ld (v_dir),a
+            ld a,1
+            ld (v_act),a
+            ld a,#FF
+            ld (v_ox),a
+            ld a,40
+            ld (v_dtim),a
+            xor a
+            ld (v_acc),a
+            ret
+.run        ld a,(v_acc)
+            add a,V_SPEED
+            ld (v_acc),a
+            jr nc,.mv                   ; (pas de pas cette image)
+            ld a,(v_dir)
+            or a
+            ld a,(v_xo)
+            jr nz,.left
+            inc a
+            ld (v_xo),a
+            cp V_XMAX
+            jr z,.leave
+            jr .mv
+.left       dec a
+            ld (v_xo),a
+            jr z,.leave
+.mv         call mv_drawcheck
+            ld a,(veh_on)
+            and 7
+            cp 3
+            call z,mv_war
+            ld a,(v_xo)                 ; largage : toutes les 2 s, quand le camion est entierement a l'ecran, Papi en vie
+            cp 12
+            ret c
+            cp 79
+            ret nc
+            ld a,(p_state)
+            or a
+            ret nz
+            ld hl,v_dtim
+            ld a,(hl)
+            or a
+            jr z,.try
+            dec (hl)
+            ret
+.try        call mv_drop
+            ret nc
+            ld a,V_DROP
+            ld (v_dtim),a
+            ret
+.leave      call mv_erase               ; sorti : il revient apres une pause
+            xor a
+            ld (v_act),a
+            call rand
+            and 63
+            add a,40
+            ld (v_wait),a
+            ret
+
+; numero d'image du camion : camion de troupes 0 (cap a gauche) ou 1 (cap a droite) ; WarTruck : 2 + cap x 4 + direction du canon
+mv_image:   ld a,(v_dir)                ; 0 : roule vers la droite -> cap a droite
+            xor 1
+            ld c,a
+            ld a,(veh_on)
+            and 7
+            cp 3
+            ld a,c
+            ret nz
+            add a,a
+            add a,a
+            ld c,a
+            ld a,(v_aim)
+            add a,c
+            add a,2
+            ret
+
+; octets visibles du camion dont x + 12 = A : B = bord gauche, C = bord droit (exclu), dans [0, 78]
+mv_range:   ld c,a
+            cp 79
+            jr c,.h
+            ld c,78
+.h          sub 12
+            jr nc,.l
+            xor a
+.l          ld b,a
+            ret
+
+; redessine le camion s'il a bouge ou si la tourelle a tourne
+mv_drawcheck:
+            call mv_image
+            ld hl,v_of
+            cp (hl)
+            jr nz,mv_draw
+            ld a,(v_ox)
+            ld hl,v_xo
+            cp (hl)
+            ret z
+; dessin : on efface l'union de l'ancien et du nouveau rectangle (visibles), puis on dessine par-dessus (b1_restore : decor du miroir)
+mv_draw:    call mv_image
+            ld (v_of),a
+            ld a,(v_xo)
+            call mv_range
+            ld a,b
+            ld (nw_lo),a
+            ld a,c
+            ld (nw_hi),a
+            ld a,(v_ox)
+            cp #FF
+            jr z,.rest
+            call mv_range               ; ancien rectangle ; union : plus petit bord gauche, plus grand bord droit
+            ld a,(nw_lo)
+            cp b
+            jr nc,.a
+            ld b,a
+.a          ld a,(nw_hi)
+            cp c
+            jr c,.rest
+            ld c,a
+.rest       ld a,c
+            sub b
+            jr z,.nodraw
+            jr c,.nodraw
+            ld d,a
+            ld a,(v_y)
+            ld c,a
+            ld e,24
+            call b1_restore
+.nodraw     ld a,(v_xo)
+            ld (v_ox),a
+            ld a,(v_y)
+            ld (v_oy),a
+            ld a,(nw_hi)                ; le sprite : colonnes visibles [nw_lo, nw_hi)
+            ld hl,nw_lo
+            sub (hl)
+            ret z
+            ret c
+            ld (bl_n),a
+            ld a,(v_xo)                 ; decalage dans l'image : 2 x (bord gauche visible + 12 - x0) octets
+            ld c,a
+            ld a,(nw_lo)
+            add a,12
+            sub c
+            add a,a
+            ld c,a
+            ld b,0
+            ld a,(v_of)
+            add a,a
+            ld e,a
+            ld d,0
+            ld hl,mv_sprtab
+            add hl,de
+            ld e,(hl)
+            inc hl
+            ld d,(hl)
+            ex de,hl
+            add hl,bc
+            ex de,hl                    ; DE = source
+            ld a,24
+            ld (bl_s),a
+            ld (bl_h),a
+            ld a,(nw_lo)
+            ld b,a
+            ld a,(v_y)
+            ld c,a
+            call mv_blit
+            ld a,(v_xo)                 ; les ennemis recouverts se redessinent (apres le camion : ils passent devant)
+            jp mv_wake
+
+; efface le camion (rectangle affiche) et reveille les ennemis dessous
+mv_erase:   ld a,(v_ox)
+            cp #FF
+            ret z
+            push af
+            call mv_range
+            ld a,c
+            sub b
+            jr z,.n
+            jr c,.n
+            ld d,a
+            ld a,(v_oy)
+            ld c,a
+            ld e,24
+            call b1_restore
+.n          ld a,#FF
+            ld (v_ox),a
+            pop af
+; ennemis qui recouvrent le camion (x + 12 = A) : ils se redessinent
+mv_wake:    ld c,a
+            ld a,(v_y)
+            ld b,a
+            ld ix,enemies
+            ld de,ESIZE
+            ld h,MAXENEMY
+.w          ld a,(ix+E_STATE)
+            or a
+            jr z,.n
+            ld a,(ix+E_X)
+            sub c
+            add a,17
+            cp 17
+            jr nc,.n
+            ld a,(ix+E_Y)
+            sub b
+            add a,11
+            cp 35
+            jr nc,.n
+            ld (ix+E_LAST),#FF
+.n          add ix,de
+            dec h
+            jr nz,.w
+            ret
+
+; image masquee (paires masque / donnee, sans zigzag) : DE = source, B = x, C = y, bl_n octets par ligne, bl_h lignes, bl_s = pas de la source
+mv_blit:    push bc
+            push de
+            call scr_addr
+            ld a,(bl_n)
+            ld b,a
+.b          ld a,(de)
+            inc de
+            and (hl)
+            ld c,a
+            ld a,(de)
+            inc de
+            or c
+            ld (hl),a
+            inc hl
+            djnz .b
+            pop de
+            ld a,(bl_s)
+            add a,e
+            ld e,a
+            jr nc,.n
+            inc d
+.n          pop bc
+            inc c
+            ld hl,bl_h
+            dec (hl)
+            jr nz,mv_blit
+            ret
+
+; larguer une unite : une place libre (a partir de la 3e : les deux premieres sont factices), devant le camion. Sortie : C = largue
+mv_drop:    ld a,(nb_wanted)
+            sub 2
+            ld b,a
+            ld ix,enemies+2*ESIZE
+            ld de,ESIZE
+.f          ld a,(ix+E_STATE)
+            or a
+            jr z,.free
+            add ix,de
+            djnz .f
+            or a
+            ret
+.free       ld a,(v_xo)
+            sub 9
+            ld b,a
+            ld a,(v_y)
+            add a,12
+            ld c,a
+            call can_stand_e
+            jr z,.ok
+            or a
+            ret
+.ok         call enemy_place
+            scf
+            ret
+
+;------------------------------------------------------------------------------
+; WarTruck : rafales de 3 balles, canon dans les 4 directions tour a tour (0 droite, 1 gauche, 2 bas, 3 haut)
+;------------------------------------------------------------------------------
+mv_war:     ld a,(p_state)
+            or a
+            ret nz
+            ld a,(v_xo)
+            cp 12
+            ret c
+            cp 79
+            ret nc
+            ld a,(v_bn)
+            or a
+            jr nz,.in
+            ld a,(v_bcd)
+            or a
+            jr z,.start
+            dec a
+            ld (v_bcd),a
+            ret
+.start      ld a,V_BURST
+            ld (v_bn),a
+            xor a
+            ld (v_bt),a
+            ld a,(v_aim)
+            inc a
+            and 3
+            ld (v_aim),a
+            ld a,11                     ; Tir Boss : un seul son pour toute la rafale
+            jp sfx
+.in         ld a,(v_bt)
+            or a
+            jr z,.shoot
+            dec a
+            ld (v_bt),a
+            ret
+.shoot      ld a,V_BSPACE
+            ld (v_bt),a
+            ld hl,v_bn
+            dec (hl)
+            jr nz,mv_shoot
+            ld a,V_BDELAY
+            ld (v_bcd),a
+; une balle depuis la tourelle, dans la direction v_aim (balle d'ennemi : classe de portee 5, infinie)
+mv_shoot:   ld a,(v_aim)
+            ld e,a
+            ld d,0
+            ld hl,mv_ktab
+            add hl,de
+            add hl,de
+            ld a,(v_xo)
+            sub 12
+            add a,(hl)
+            ld b,a                      ; H : x du camion + decalage (la balle part de decalage + shot_tab)
+            inc hl
+            ld a,(v_y)
+            add a,(hl)
+            ld c,a                      ; L
+            ld a,(v_aim)
+            cp 2
+            jr c,.f
+            ld a,(v_dir)                ; cap a droite : la tourelle est a gauche
+            or a
+            jr nz,.f
+            ld a,b
+            sub 5
+            ld b,a
+.f          push ix
+            ld ix,bullets+4*BSIZE
+            ld de,BSIZE
+            ld a,NBUL-4
+.find       ex af,af'
+            ld a,(ix+B_ON)
+            or a
+            jr z,.ok
+            add ix,de
+            ex af,af'
+            dec a
+            jr nz,.find
+            pop ix
+            ret
+.ok         ld a,5
+            ld (shot_cls),a
+            ld h,b
+            ld l,c
+            ld a,(v_aim)
+            call bullet_start
+            pop ix
+            ret
+mv_ktab:    db 5,6, 1,6, 5,10, 5,8      ; par direction : decalage x, y du point de depart de la balle (apres soustraction du decalage de shot_tab)
+
+;------------------------------------------------------------------------------
+; touches
+;------------------------------------------------------------------------------
+; balle de Papi (IX) : touche le camion ? (1 point de degat)
+mv_bullet:  ld a,(v_act)
+            or a
+            ret z
+            ld a,(ix+B_X)
+            ld hl,v_xo
+            sub (hl)
+            add a,12
+            cp 12
+            ret nc
+            ld a,(ix+B_Y)
+            ld hl,v_y
+            sub (hl)
+            add a,2
+            cp 26
+            ret nc
+            ld (ix+B_ON),2
+            ld a,1
+; A = points de degat
+mv_dmg:     ld c,a
+            ld a,(veh_on)
+            and 7
+            cp 1
+            jr z,.army
+            ld hl,kills_left            ; modes 2 et 3 : les points de vie sont ceux du HUD
+            ld a,(hl)
+            sub c
+            jr nc,.s
+            xor a
+.s          ld (hl),a
+            ld hl,hud_dirty
+            set 2,(hl)
+            or a
+            jp z,mv_die
+            jr .hit
+.army       ld hl,v_hpt
+            ld a,(hl)
+            sub c
+            jr nc,.s2
+            xor a
+.s2         ld (hl),a
+            or a
+            jp z,mv_die1
+.hit        ld a,3
+            jp sfx
+
+; coordonnees des deux explosions du camion : B = x gauche, D = x droit, C = y
+mv_spots:   ld a,(v_xo)
+            sub 12
+            jr nc,.a
+            xor a
+.a          cp 73
+            jr c,.b
+            ld a,72
+.b          ld b,a
+            ld a,(v_xo)
+            sub 6
+            jr nc,.c
+            xor a
+.c          cp 73
+            jr c,.d
+            ld a,72
+.d          ld d,a
+            ld a,(v_y)
+            add a,6
+            ld c,a
+            ret
+
+; modes 2 et 3 : le camion est detruit (kills_left = 0 : la boucle principale appelle 'victory', qui dessine les explosions sur les places 0 et 1 : bk_final)
+mv_die:     call mv_erase
+            xor a
+            ld (v_act),a
+            ld a,255
+            ld (v_wait),a
+            call mv_spots
+            ld a,b
+            ld (enemies+E_X),a
+            ld a,c
+            ld (enemies+E_Y),a
+            ld a,d
+            ld (enemies+ESIZE+E_X),a
+            ld a,c
+            ld (enemies+ESIZE+E_Y),a
+            ret
+
+; mode 1 : le camion est detruit : 500 points, explosions, un autre arrive plus tard
+mv_die1:    ld b,50
+.pt         push bc
+            ld hl,score+4
+            call add_score
+            pop bc
+            djnz .pt
+            call mv_erase
+            xor a
+            ld (v_act),a
+            call mv_spots
+            push de
+            call mv_fxadd
+            pop de
+            ld b,d
+            call mv_fxadd
+            ld a,V_HP
+            ld (v_hpt),a
+            ld a,150
+            ld (v_wait),a
+            ld a,6
+            jp sfx
+
+;------------------------------------------------------------------------------
+; explosions (3 emplacements : x, y, temps restant 0..17) : 4 images de 4 images d'affichage
+;------------------------------------------------------------------------------
+mv_fxadd:   ld hl,v_fxs+2               ; B = x, C = y
+            ld de,3
+            ld a,3
+.f          ex af,af'
+            ld a,(hl)
+            or a
+            jr z,.free
+            add hl,de
+            ex af,af'
+            dec a
+            jr nz,.f
+            ret
+.free       ld (hl),17
+            dec hl
+            ld (hl),c
+            dec hl
+            ld (hl),b
+            ret
+
+mv_fx:      ld ix,v_fxs
+            ld b,3
+.l          ld a,(ix+2)
+            or a
+            jr z,.n
+            dec a
+            ld (ix+2),a
+            push bc
+            jr z,.end
+            and 3
+            jr nz,.pop
+            ld a,(ix+2)                 ; image : 4 - t / 4  (t = 16, 12, 8, 4)
+            srl a
+            srl a
+            ld c,a
+            ld a,4
+            sub c
+            ld hl,EXPL_DATA
+            ld de,144
+            or a
+            jr z,.p
+            ld b,a
+.m          add hl,de
+            djnz .m
+.p          push hl
+            ld b,(ix+0)
+            ld c,(ix+1)
+            ld de,#060C
+            call b1_restore
+            pop de                      ; DE = image
+            ld a,6
+            ld (bl_n),a
+            ld a,12
+            ld (bl_s),a
+            ld (bl_h),a
+            ld b,(ix+0)
+            ld c,(ix+1)
+            call mv_blit
+            jr .pop
+.end        ld b,(ix+0)                 ; fin : le decor revient, les ennemis dessous se redessinent
+            ld c,(ix+1)
+            ld de,#060C
+            call b1_restore
+            ld b,(ix+0)
+            ld c,(ix+1)
+            call wake_12
+.pop        pop bc
+.n          ld de,3
+            add ix,de
+            djnz .l
+            ret
+
+;------------------------------------------------------------------------------
+; bidons explosifs
+;------------------------------------------------------------------------------
+; IY = bidon -> B = x (octets), C = y (lignes) de sa case du haut
+mv_bxy:     ld a,(iy+0)
+            and 15
+            ld b,a
+            add a,a
+            add a,b
+            add a,a
+            ld b,a
+            ld a,(iy+0)
+            rrca
+            rrca
+            rrca
+            rrca
+            and 15
+            ld c,a
+            ld a,(iy+1)
+            and 1
+            rlca
+            rlca
+            rlca
+            rlca
+            or c
+            dec a
+            add a,a
+            add a,a
+            add a,a
+            ld c,a
+            ret
+
+; HL = case de la grille touchee par une balle : un coup de plus sur ce bidon (3 coups : il explose)
+mv_barrel:  ld a,(veh_on)
+            or a
+            ret z
+            ld a,(v_init)
+            or a
+            ret z
+            ld d,h
+            ld e,l
+            ld bc,-16
+            add hl,bc
+            ld a,(hl)
+            and 7
+            cp 7
+            jr z,.top                   ; la case du dessus est un bidon : HL est la case du haut
+            ex de,hl
+.top        ld a,(v_nb)
+            or a
+            ret z
+            ld b,a
+            ld iy,v_bar
+            ld de,BARSZ
+.f          ld a,(iy+0)
+            cp l
+            jr nz,.n
+            ld a,(iy+1)
+            cp h
+            jr z,.found
+.n          add iy,de
+            djnz .f
+            ret
+.found      ld a,(iy+3)
+            dec a
+            ret nz                      ; deja en flammes
+            inc (iy+2)
+            ld a,(iy+2)
+            cp 3
+            ret c
+            jp mv_explode
+
+; explosion de grenade (g_ex, g_ey) : le camion et les bidons dans le souffle
+mv_gren:    ld a,(v_init)
+            or a
+            ret z
+            ld a,(v_act)
+            or a
+            jr z,.bar
+            ld a,(g_ex)
+            ld hl,v_xo
+            sub (hl)
+            add a,21
+            cp 25
+            jr nc,.bar
+            ld a,(g_ey)
+            ld hl,v_y
+            sub (hl)
+            add a,18
+            cp 49
+            jr nc,.bar
+            ld a,3
+            call mv_dmg
+.bar        ld a,(v_nb)
+            or a
+            ret z
+            ld b,a
+            ld iy,v_bar
+.l          ld a,(iy+3)
+            dec a
+            jr nz,.n
+            push bc
+            call mv_bxy
+            ld a,(g_ex)
+            sub b
+            add a,9
+            cp 19
+            jr nc,.nb
+            ld a,(g_ey)
+            sub c
+            add a,18
+            cp 41
+            jr nc,.nb
+            call mv_explode
+.nb         pop bc
+.n          ld de,BARSZ
+            add iy,de
+            djnz .l
+            ret
+
+; IY = bidon : il explose. Les deux cases deviennent des flammes (case = 4), explosion, 3 points de degat autour (ennemis, Papi, camion)
+mv_explode: ld (iy+3),2
+            ld (iy+4),#FF
+            ld l,(iy+0)
+            ld h,(iy+1)
+            ld a,(hl)
+            and #F8
+            or 4
+            ld (hl),a
+            ld de,16
+            add hl,de
+            ld a,(hl)
+            and #F8
+            or 4
+            ld (hl),a
+            ld d,0                      ; flammes : image 0, tout de suite (les explosions effacent depuis le miroir)
+            call mv_fdraw
+            call mv_bxy
+            ld a,c
+            add a,2
+            ld c,a
+            ld (mx_c),bc                ; (mx_c = x, my_c = y) : centre du souffle
+            call mv_fxadd
+            ld a,6
+            call sfx
+            ld ix,enemies
+            ld b,MAXENEMY
+.e          ld a,(ix+E_STATE)
+            dec a
+            jr nz,.en
+            ld a,(mx_c)
+            sub (ix+E_X)
+            add a,9
+            cp 19
+            jr nc,.en
+            ld a,(my_c)
+            sub (ix+E_Y)
+            add a,18
+            cp 37
+            jr nc,.en
+            push bc
+            call enemy_kill_now
+            pop bc
+.en         ld de,ESIZE
+            add ix,de
+            djnz .e
+            ld a,(p_state)
+            or a
+            jr nz,.t
+            ld a,(mx_c)
+            ld hl,p_x
+            sub (hl)
+            add a,9
+            cp 19
+            jr nc,.t
+            ld a,(my_c)
+            ld hl,p_y
+            sub (hl)
+            add a,18
+            cp 37
+            jr nc,.t
+            call player_hit
+.t          ld a,(v_act)
+            or a
+            ret z
+            ld a,(mx_c)
+            ld hl,v_xo
+            sub (hl)
+            add a,21
+            cp 25
+            ret nc
+            ld a,(my_c)
+            ld hl,v_y
+            sub (hl)
+            add a,18
+            cp 49
+            ret nc
+            ld a,3
+            jp mv_dmg
+
+; IY = bidon, D = phase (0..3 : 0 1 2 1) : dessine les deux cases de flamme (ecran et miroir)
+mv_fdraw:   ld a,d
+            add a,a
+            add a,a
+            add a,a
+            add a,a
+            ld e,a
+            ld hl,(wtr_img)
+            push hl
+            ld hl,(spawn_tab+30)        ; images de flamme de la zone (les 2 derniers octets de la table des points d'apparition)
+            ld (wtr_img),hl
+            ld l,(iy+0)
+            ld h,(iy+1)
+            push de
+            call b1_wtr
+            pop de
+            ld l,(iy+0)
+            ld h,(iy+1)
+            ld bc,16
+            add hl,bc
+            call b1_wtr
+            pop hl
+            ld (wtr_img),hl
+            ret
+
+; animation des flammes : un bidon par image (tour a tour), sauf si un ennemi est sur ses cases
+mv_flames:  ld a,(v_nb)
+            or a
+            ret z
+            ld a,(v_bi)
+            inc a
+            and 7
+            ld (v_bi),a
+            ld hl,v_nb
+            cp (hl)
+            ret nc
+            ld c,a
+            add a,a
+            add a,c
+            add a,a
+            ld e,a
+            ld d,0
+            ld iy,v_bar
+            add iy,de
+            ld a,(iy+3)
+            cp 2
+            ret nz
+            ld a,(frame)
+            rrca
+            rrca
+            rrca
+            rrca
+            and 3
+            ld d,a
+            cp (iy+4)
+            ret z
+            ld l,(iy+0)
+            ld h,(iy+1)
+            bit 6,(hl)
+            ret nz
+            ld bc,16
+            add hl,bc
+            bit 6,(hl)
+            ret nz
+            ld (iy+4),d
+            jp mv_fdraw
+
+; les flammes brulent Papi et les ennemis qui les touchent (cases des pieds) : une image sur 4
+mv_hazard:  ld a,(v_nb)
+            or a
+            ret z
+            ld a,(p_state)
+            or a
+            jr nz,.en
+            ld bc,(p_y)
+            ld a,b
+            add a,3
+            ld b,a
+            ld a,c
+            add a,10
+            ld c,a
+            call cell_ptr
+            ld a,(hl)
+            and 7
+            cp 4
+            call z,player_hit
+.en         ld ix,enemies
+            ld b,MAXENEMY
+.l          ld a,(ix+E_STATE)
+            dec a
+            jr nz,.n
+            push bc
+            ld a,(ix+E_X)
+            add a,3
+            ld b,a
+            ld a,(ix+E_Y)
+            add a,10
+            ld c,a
+            call cell_ptr
+            ld a,(hl)
+            and 7
+            cp 4
+            jr nz,.nk
+            call enemy_kill_now
+.nk         pop bc
+.n          ld de,ESIZE
+            add ix,de
+            djnz .l
+            ret
+
+mv_sprtab:  dw TRUCK_DATA, TRUCK_DATA+576, TRUCK_DATA+2*576, TRUCK_DATA+3*576, TRUCK_DATA+4*576, TRUCK_DATA+5*576, TRUCK_DATA+6*576, TRUCK_DATA+7*576, TRUCK_DATA+8*576, TRUCK_DATA+9*576
+
+; variables du module (remises a zero au debut de chaque mission : mv_init)
+mv_vars:
+v_act       ds 1                ; 0 hors de l'ecran, 1 en route
+v_xo        ds 1                ; x + 12 du camion (0 = tout juste sorti a gauche, 90 = a droite)
+v_y         ds 1
+v_dir       ds 1                ; 0 vers la droite, 1 vers la gauche
+v_acc       ds 1                ; cumul de vitesse
+v_ox        ds 1                ; xo affiche (#FF : rien)
+v_oy        ds 1
+v_of        ds 1                ; image affichee
+v_wait      ds 1
+v_dtim      ds 1
+v_hpt        ds 1
+v_aim       ds 1
+v_bn        ds 1
+v_bt        ds 1
+v_bcd       ds 1
+v_bi        ds 1
+v_nb        ds 1
+nw_lo       ds 1
+nw_hi       ds 1
+bl_n        ds 1
+bl_s        ds 1
+bl_h        ds 1
+mx_c        ds 1
+my_c        ds 1
+v_fxs       ds 9
+v_bar       ds NBAR*BARSZ
+mv_vars_end:

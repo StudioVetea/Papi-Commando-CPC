@@ -42,6 +42,26 @@ hud_kills:  ld bc,#7F00+CFG_BOSS
 bk_back:    ld bc,#7F00+GAME_CFG
             out (c),c
             ret
+; zone 4 (vehicules) : A = fonction (1 image du vehicule, 2 balle de Papi, 3 explosion de grenade, 4 bidon touche), IX et HL conserves ; le code est dans la banque 7 (m_veh)
+veh_call:   ld bc,#7F00+CFG_BOSS
+            out (c),c
+            call m_veh
+            jr bk_back
+; le module (banque 7) ne voit pas le miroir : ces deux rampes remettent la banque 1 le temps d'un appel (le retour dans la banque 7 se fait d'ici)
+b1_restore: push bc                     ; B = x, C = y, D = largeur, E = hauteur : le decor revient sur ce rectangle
+            ld bc,#7F00+GAME_CFG
+            out (c),c
+            pop bc
+            call restore_xy
+            ld bc,#7F00+CFG_BOSS
+            out (c),c
+            ret
+b1_wtr:     ld bc,#7F00+GAME_CFG        ; HL = case de la grille, E = 16 x image : dessine une image de la tuile (ecran et miroir, voir wtr_draw)
+            out (c),c
+            call wtr_draw
+            ld bc,#7F00+CFG_BOSS
+            out (c),c
+            ret
 bk_killed:  push bc                     ; (conserve BC)
             ld bc,#7F00+CFG_BOSS
             out (c),c
@@ -125,6 +145,9 @@ bk_final:
             call add_score
             pop bc
             djnz .pt
+            ld a,(veh_on)               ; zone 4, mission 1 (camion) : suite normale (ZONE CLEAR)
+            cp 2
+            jp z,victory_zc
             jp new_game                 ; zone_cur passe a NZONES : l'ecran CONGRATULATIONS (intro.asm)
 .pos        ld a,(enemies+ESIZE+E_X)
             ld b,a

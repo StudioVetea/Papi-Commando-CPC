@@ -202,6 +202,12 @@ wait_end:
             inc (hl)
             call keyscan
             call wtr_tick               ; eau animee (zone 3) et vitesse de Papi dans l'eau : voir water.asm
+            ld a,(veh_on)               ; zone 4 : le vehicule (avant Papi, qui se redessine par-dessus) et les bidons
+            or a
+            jr z,.nv
+            ld a,1
+            call veh_call
+.nv
             call player_update          ; d'abord ce qui doit rester a 50 Hz
             call time_tick              ; Time Attack : une seconde de moins toutes les 50 images
             ld a,(kills_left)
@@ -727,6 +733,8 @@ load_zone_data:
             ldir
             ld hl,CRATE_IMG             ; la caisse de grenades reprend son image (le Z80 de la mission precedente l'avait remplacee)
             ld (crate_frame),hl
+            ld a,(ZSTAGE+95)            ; zone a vehicules : mode de la mission
+            ld (veh_on),a
             ld hl,ZSTAGE+8              ; seuils de couleur de la barre de vie du boss (0 : pas de boss), mission Z80 et son image, parametres du boss
             ld de,hp_thr
             ld bc,8
@@ -1673,7 +1681,11 @@ bullets_update:
             call scr_addr
             call draw_gdat
             jr .next
-.impact     call wake_enemies           ; impact sur un obstacle : la balle s'efface et son eclat s'affiche (meme animation qu'en fin de portee)
+            ; (HL = case de la grille)
+.impact     bit 2,(hl)                  ; un bidon explosif (ou une caserne : le module regarde veh_on) : un coup de plus (module des vehicules)
+            ld a,4
+            call nz,veh_call
+            call wake_enemies           ; impact sur un obstacle : la balle s'efface et son eclat s'affiche (meme animation qu'en fin de portee)
             call bullet_erase
             ld (ix+B_ON),3
             ld (ix+B_AGE),0
@@ -1813,7 +1825,11 @@ bullet_vs_enemies:
 .n          ex af,af'
             dec a
             jr nz,.l
-            ret
+            ld a,(veh_on)               ; aucun ennemi touche ; zone 4 : la balle touche-t-elle le vehicule ?
+            or a
+            ret z
+            ld a,2
+            jp veh_call
 .touch      dec l
             dec l
             ld (ix+B_ON),2
@@ -1982,6 +1998,9 @@ DT_FY       equ 3
 
 ;--- pas encore en jeu : attendre puis entrer par un bord ---------------------
 enemy_absent:
+            ld a,(veh_on)               ; zone 4 : les ennemis ne viennent que du vehicule (module des vehicules)
+            or a
+            jp nz,enemy_next
             ld a,(bk_on)
             or a
             jr z,enemy_absent2
@@ -2035,6 +2054,11 @@ enemy_absent2:
             jp c,enemy_next
 .far        call can_stand_e
             jp nz,enemy_next
+            call enemy_place
+            jp enemy_draw
+
+; IX = fiche d'une place libre, B = x, C = y : l'ennemi entre en jeu (aussi appelee par le module des vehicules)
+enemy_place:
             ld (ix+E_X),b
             ld (ix+E_Y),c
             ld (ix+E_OX),#FF
@@ -2061,7 +2085,7 @@ enemy_absent2:
             call enemy_claim
             ld hl,hud_dirty
             set 2,(hl)
-            jp enemy_draw
+            ret
 
 ;--- animation de mort --------------------------------------------------------
 enemy_dying:
@@ -3274,6 +3298,10 @@ grenade_update:
 .kn         ld de,ESIZE
             add ix,de
             djnz .k
+            ld a,(veh_on)               ; zone 4 : le vehicule et les bidons dans le souffle
+            or a
+            ld a,3
+            call nz,veh_call
             ld a,6
             jp sfx
 
@@ -4468,8 +4496,8 @@ put_glyph:
             jr nz,.l
             ret
 
-font_chars: db '0123456789 ACEGIMNOPRSVUTFLD-HKZ!.Y+BQ'
-font_count  equ 38
+font_chars: db '0123456789 ACEGIMNOPRSVUTFLD-HKZ!.Y+BQW'
+font_count  equ 39
 txt_hud:    db 'SCORE      HI         ',4,'  ',1,'    '
 hud_tile:   db 2,0   ; glyphes de 2 octets : SCORE x=0 chiffres x=12 / HI x=22 chiffres x=28 / coeur (tuile, 4 octets) x=44 vies x=48 / grenade (tuile) x=52 grenades x=57 / tuile mission x=64 ennemis restant x=69
 txt_over:   db 'GAME OVER !',0
@@ -4718,7 +4746,7 @@ victory:                                ; quota atteint (appelee quand kills_lef
             ld a,(bk_on)
             or a
             jp nz,bk_final              ; boss tue : explosions, puis l'ecran CONGRATULATIONS sans passer par ZONE CLEAR
-            call blackout               ; ecran entierement noir (bandeau et HUD compris) : "ZONE CLEAR !" et son jingle
+victory_zc: call blackout               ; ecran entierement noir (bandeau et HUD compris) : "ZONE CLEAR !" et son jingle
             xor a
             ld (hud_dirty),a            ; (le HUD ne se redessine plus)
             ld a,10
@@ -5194,7 +5222,7 @@ transp_line:
 ; premier officier x16, nombre de types, puis (type, pourcentage) par type) ; voir tools/convert.py, build_zone
 
 ; variables permanentes (persistent d'une partie a l'autre : hors de 'vars'), rangees en memoire basse juste apres 'vars' pour liberer 30 octets du programme (initialisees par boot)
-PVARS       equ VARBASE+215             ; = vars_end
+PVARS       equ VARBASE+216             ; = vars_end
 hp_thr      equ PVARS                   ; (3) boss : seuils de la barre de vie (vert / jaune / orange) ; 0 : pas de boss
 bk_on       equ hp_thr
 z80_m       equ PVARS+3                 ; mission 'Find the Z80' (apres le quota de kills, le Z80 tombe du dernier ennemi abattu) : 1 ; charge avec la zone
@@ -5216,7 +5244,8 @@ hiscore     equ PVARS+23                ; (5) meilleur score (hors de 'vars', do
 meter       equ PVARS+28                ; touche M : jauge de charge dans la bordure
 snd_mix     equ PVARS+29
 acc_zone    equ PVARS+30                ; zone choisie par le code d'acces du menu (0 = zone 1, 1 = zone 2...) : la partie y commence
-PVARS_LEN   equ 31
+veh_on      equ PVARS+31                ; zone 4 : mode vehicule de la mission (0 aucun, 1 camion + quota ou chrono, 2 camion + barre de vie, 3 WarTruck + barre de vie : fin de zone), lu dans l'en-tete
+PVARS_LEN   equ 32
 WTR_ZP      equ PVARS+PVARS_LEN         ; eau animee : voir water.asm
 ; Hall of Fame : 7 entrees de 15 octets (nom sur 10 caracteres, 5 chiffres) rangees dans les 16 octets libres qui terminent chaque trou de la page A
 ; (13 images de 144 octets = 1872 octets sur 1888) : entree n en HOF_E0 + n x #800.  Aucun octet du programme permanent n'est utilise.
@@ -5350,7 +5379,8 @@ b_cno       equ VARBASE+211  ; boss : images restant a avancer sans chercher de 
 z80_f       equ VARBASE+212  ; 1 = le Z80 est au sol (la caisse sert d'objet)
 spawn_t     equ VARBASE+213  ; temps depuis le debut de la mission (en 4 images)
 life_bl     equ VARBASE+214  ; images de clignotement restantes du nombre de vies
-vars_end    equ VARBASE+215
+v_init      equ VARBASE+215  ; vehicules : 1 = le module des vehicules (banque 7) a prepare la mission
+vars_end    equ VARBASE+216
             assert vars_end<=#01B0
 
 
@@ -5503,6 +5533,9 @@ ovlb_load:  ld hl,OVLB+(ovlb_tab-ovlb_src)
             ld a,l
             cp (OVLB+(ovlb_tab_end-ovlb_src))&255
             jr nz,.lo
+            ld hl,BOSS_LOAD+BOSS_PAD    ; la banque 7 est encore en #4000 : son image (compressee, lue en dernier) est decompressee sur place
+            ld de,BOSS_LOAD
+            call unpack
             ld bc,#7F00+GAME_CFG        ; le miroir revient
             out (c),c
             jp fdc_off                  ; le moteur s'arrete : plus de lecture avant la premiere zone
@@ -5521,7 +5554,7 @@ ovlb_tab:   db CFG_MENU,MENU_TRK
             db CFG_HOF,HOF_TRK
             dw HOF_N,HOF_LOAD
             db CFG_BOSS,BOSS_TRK
-            dw BOSS_N,BOSS_LOAD
+            dw BOSS_N,BOSS_LOAD+BOSS_PAD
 ovlb_tab_end:
 ovlb_end:
             assert ovlb_end-ovlb_src<=#E0
@@ -5712,5 +5745,5 @@ hof_stop:
 boss_start:
             include 'boss_mod.asm'
 boss_stop:
-            assert boss_stop-boss_start<=BOSS_N*512
-            save 'build/boss.bin',#8000,boss_stop-boss_start
+            assert boss_stop-boss_start<=VOICE_OFF
+            save 'build/boss_code.bin',#8000,boss_stop-boss_start

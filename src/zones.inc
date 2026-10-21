@@ -45,3 +45,15 @@ zone_dir:
  db 25,7,13
  dw #615D
  db 0
+ db 27,2,7
+ dw #57C2
+ db 0
+ db 28,0,7
+ dw #5807
+ db 0
+ db 28,7,7
+ dw #57AA
+ db 0
+ db 29,5,7
+ dw #57BC
+ db 0

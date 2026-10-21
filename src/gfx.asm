@@ -52,7 +52,7 @@ spr_balle:             ; 1 image 1x6
  db #FF,#00
  db #00,#00
 
-font:                  ; glyphes 3x5 compactes : 2 octets (poids faible d abord) = 15 bits, ligne du haut en tete, ordre "0123456789 ACEGIMNOPRSVUTFLD-HKZ!.Y+BQ"
+font:                  ; glyphes 3x5 compactes : 2 octets (poids faible d abord) = 15 bits, ligne du haut en tete, ordre "0123456789 ACEGIMNOPRSVUTFLD-HKZ!.Y+BQW"
  db #DE,#F6
  db #2E,#59
  db #CE,#E7
@@ -91,6 +91,7 @@ font:                  ; glyphes 3x5 compactes : 2 octets (poids faible d abord)
  db #A0,#0B
  db #5C,#D7
  db #D6,#56
+ db #FA,#B6
 
 hp_pens:               ; barre de vie du boss : (pixel gauche, pixel droit) pour vert, jaune, orange, rouge
  db #0A,#05

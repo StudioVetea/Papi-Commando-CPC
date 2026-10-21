@@ -29,7 +29,7 @@ def fw_of(rgb):
     r, g, b = rgb
     return lv[b] + 3 * lv[r] + 9 * lv[g]
 
-SUBST = {18: 21, 11: 2, 20: 26, 23: 26}      # vert vif (General) -> citron vert : le jeu n'a que 16 stylos, tous utilises
+SUBST = {18: 21, 11: 2, 20: 26, 23: 26, 5: 2, 14: 13}      # vert vif (General) -> citron vert : le jeu n'a que 16 stylos, tous utilises
 
 def load(name):
     """-> grille [y][x] de stylos (None = transparent)"""
@@ -114,7 +114,7 @@ HEART = [[0, 2, 2, 0, 0, 2, 2, 0],
          [0, 0, 2, 2, 2, 1, 0, 0],
          [0, 0, 0, 2, 1, 0, 0, 0],
          [0, 0, 0, 0, 0, 0, 0, 0]]
-FONT_ORDER = "0123456789 ACEGIMNOPRSVUTFLD-HKZ!.Y+BQ"   # (X et % : plus utilises par le jeu, restent dans FONT pour le bandeau du menu)
+FONT_ORDER = "0123456789 ACEGIMNOPRSVUTFLD-HKZ!.Y+BQW"   # (X et % : plus utilises par le jeu, restent dans FONT pour le bandeau du menu)
 
 
 # ---------------------------------------------------------------- compression (format maison, proche de LZ4)
@@ -233,11 +233,15 @@ ZINFO = {1: dict(title='OUTPOST C-01', tmx='ZoneTest.tmx', tileset='TileSet1.png
          2: dict(title='THE LOST BARRACKS', tmx='Zone2.tmx', tileset='TileSet3.png', obstacle='TileSet3Obstacles.png', spawn='auto', first=1),
          # zone 3 : 2 tilesets (numeros de tuile 1-40 : TileSet1, 41-80 : TileSet2) ; l'eau (carre rose des obstacles) s'anime sur 3 images (1 2 3 2)
          3: dict(title='HIDDEN HEADQUARTER', tmx='Zone3.tmx', tileset=['TileSet1.png', 'TileSet2.png'], obstacle=['TileSet1Obstacle.png', 'TileSet2Obstacles.png'],
-                 spawn='auto', first=1, water='Eau_3frames_12x8.png')}
-def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0):
+                 spawn='auto', first=1, water='Eau_3frames_12x8.png'),
+         # zone 4 : 1 tileset (numeros de tuile 117-156 dans le TMX), eau, bidons explosifs (carre blanc) et routes (carre noir) ; les ennemis viennent des vehicules (veh)
+         4: dict(title='TWIN ROADS', tmx='Zone4.tmx', tileset='TileSet4.png', obstacle='TileSet4Obstacles.png', spawn=[(0, 0)], first=1, water='Eau_3frames_12x8.png',
+                 gid0=117, flame='Flamme_3frames_12x8_Z4.png')}
+def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None):
     zi = ZINFO[zn]
+    if veh: units += 2                          # vehicule : 2 places d'ennemi factices (0 et 1, jamais utilisees : elles font cesser les hooks du boss) + les unites transportees
     z = dict(name='zone%02d' % n, zn=zn, spawn_first=zi.get('first', 0), mnum=n, z80=z80, title=zi['title'], units=units, kills=time if time else kills, mix=mix, count=set(count), time=bool(time),
-             art=list(art), units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'))
+             art=list(art), units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'))
     if time: z['text'] = ['TIME ATTACK !', 'SURVIVE %d S.' % time]
     else:
         noun = {(1,): 'SOLDIERS', (2,): 'OFFICERS', (3,): 'GENERALS'}.get(tuple(sorted(count)), 'ENEMIES')
@@ -295,6 +299,26 @@ ZONES = [
        art=[dict(unit=3, x=26, y=148, walk=True),
             dict(png='BossFalzar_12x24.png', fw=12, fh=24, frames=4, x=36, y=136, walk=True),
             dict(unit=3, x=46, y=148, walk=True)]),
+    # Zone 4 "Twin roads" (cahier des charges de la zone 4) : les ennemis sortent des vehicules (veh : 1 = camion de troupes, mission a quota ou chrono ; 2 = camion, barre de vie, victoire
+    #   normale ; 3 = WarTruck, barre de vie, rafales, fin de zone). 'units' = unites transportees au maximum a l'ecran ; hp = points de vie du vehicule (kills = hp pour les modes 2 et 3)
+    _m(1, 6, [(1, 100)], kills=50, zn=4, veh=2, hp=50, text=['DESTROY THE', 'ARMY TRUCK !'], show_units=False,
+       art=[dict(unit=1, x=16, y=148, walk=True), dict(unit=1, x=26, y=148, walk=True),
+            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
+            dict(unit=1, x=48, y=148, walk=True), dict(unit=1, x=58, y=148, walk=True)]),
+    _m(2, 5, [(2, 100)], kills=15, count=(2,), zn=4, veh=1, z80=1, text=['FIND THE Z80 !'], show_units=False,
+       art=[dict(unit=2, x=14, y=148, walk=True), dict(unit=2, x=24, y=148, walk=True),
+            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=33, y=136, walk=True),
+            dict(png='Z80_12x12.png', fw=12, fh=12, frames=1, x=47, y=148, walk=True),
+            dict(unit=2, x=56, y=148, walk=True)]),
+    _m(3, 6, [(2, 100)], time=40, zn=4, veh=1, show_units=False,
+       art=[dict(unit=2, x=16, y=148, walk=True), dict(unit=2, x=26, y=148, walk=True),
+            dict(png='ArmyTruck_24x24.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
+            dict(unit=2, x=48, y=148, walk=True), dict(unit=2, x=58, y=148, walk=True)]),
+    # Mission finale : le WarTruck (60 PV, rafales de 3 balles dans les 4 directions) + ses soldats
+    _m(4, 6, [(1, 100)], kills=60, zn=4, veh=3, hp=60, text=['DESTROY THE', 'WAR TRUCK !'], show_units=False,
+       art=[dict(unit=1, x=16, y=148, walk=True), dict(unit=1, x=26, y=148, walk=True),
+            dict(png='WarTruck_24x96.png', fw=24, fh=24, frames=1, x=34, y=136, walk=True),
+            dict(unit=1, x=48, y=148, walk=True), dict(unit=1, x=58, y=148, walk=True)]),
     # Images supplementaires de l'ecran de mission (boss, batiments...) : ajouter a _m(...) un argument  art=[...]  (et show_units=False pour ne pas afficher les ennemis) dont chaque element est
     #   dict(png='Boss.png', fw=36, fh=36, frames=4, x=30, y=110, walk=True)   image(s) cote a cote, fw x fh pixels (paire, 80 pixels maxi), 1, 2 ou 4 images
     #   dict(tiles=[[8, 9, 10], [12, 13, 14]], x=4, y=110)                       bloc de tuiles du decor (12 x 8 pixels), numeros du TileSet
@@ -305,7 +329,7 @@ ZONES = [
  
 for _i, _z in enumerate(ZONES): _z['name'] = 'zone%02d' % (_i + 1)       # noms de fichiers uniques (le numero de mission recommence a 1 a chaque zone)
 ZSTART = [min(i for i, z in enumerate(ZONES) if z['zn'] == k) for k in sorted(ZINFO)]          # premiere mission de chaque zone
-for _k in ZINFO: assert sum(1 for z in ZONES if z['zn'] == _k) >= 5, "chaque zone doit avoir au moins 5 missions (touches secretes 1 a 6)"
+for _k in ZINFO: assert sum(1 for z in ZONES if z['zn'] == _k) >= (4 if _k == 4 else 5), "chaque zone doit avoir au moins 5 missions (4 pour la zone 4 : touches secretes 1 a 6)"
 
 # jingle "ZONE CLEAR !" (assets/ZoneClear.wav, analyse du WAV) : 64 images de 20 ms, une hauteur par image sur un canal du AY.
 # Introduction 0-280 ms (270 Hz qui descend a 185 Hz), puis 4 glissandos montants (x1,166 par image : 185 Hz -> ~1 kHz).
@@ -393,7 +417,7 @@ def build_zone(z):
     a = Image.open(os.path.join(A, ts_name)).convert('RGB')
     b = Image.open(os.path.join(A, ob_name)).convert('RGB')
     KIND = {(0, 128, 0): 0x00, (255, 0, 0): 0x03, (0, 128, 255): 0x01, (255, 255, 0): 0x80, (128, 0, 255): 0x07,    # violet : obstacle normal (bits 0-1 comme le rouge) mais pas un abri (bit 2), sortie des casernes
-            (255, 0, 210): 0x08}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
+            (255, 0, 210): 0x08, (255, 255, 255): 0x07}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
     PURPLE = (128, 0, 255)
     tpurple = set(); twater = set()
     tiles_img = load(ts_name)
@@ -425,7 +449,7 @@ def build_zone(z):
     W = int(re.search(r'<layer[^>]* width="(\d+)"', s).group(1))
     Hh = int(re.search(r'<layer[^>]* height="(\d+)"', s).group(1))
     rows = re.search(r'<data encoding="csv">(.*?)</data>', s, re.S).group(1).strip().split('\n')
-    tmap = [[(int(v) - 1) % (40 * nts) for v in r.strip().strip(',').split(',')] for r in rows]
+    tmap = [[(int(v) - z['gid0']) % (40 * nts) for v in r.strip().strip(',').split(',')] for r in rows]
     assert W == 13 and Hh == 24, 'carte attendue : 13 x 24 tuiles'
     if tpurple:        # casernes : le bloc d'obstacles qui touche une tuile violette ; ses tuiles (si elles ne servent qu'a ca) ne sont pas des abris (bit 2)
         comp = set(); todo = [(r, c) for r in range(24) for c in range(13) if tmap[r][c] in tpurple]
@@ -451,6 +475,7 @@ def build_zone(z):
         assert z['spawn'], 'carte sans tuile violette'
     for c, y in z['spawn']:
         r = (y + 10) >> 3
+        if z.get('veh'): spawns.append((c * 6, y)); continue
         assert 0 <= c < 13 and 0 <= r < 24 and tkind[tmap[r][c]] == 0, 'zone %s : point d apparition (%d,%d) pas en zone verte' % (z['name'], c, y)
         spawns.append((c * 6, y))
     assert 1 <= len(spawns) <= 16
@@ -463,11 +488,11 @@ def build_zone(z):
     # repartition des unites : le premier type recoit le reste, les autres leur pourcentage arrondi ; les types se suivent
     #   (boss : ses deux places d'abord, puis la garde)
     units = z['units']; mix = sorted(z['mix']); assert sum(p for _, p in mix) == 100 and units <= 12
-    boss = z.get('boss'); nb = 2 if boss else 0
+    boss = z.get('boss'); veh = z.get('veh', 0); nb = 2 if (boss or veh) else 0
     ng = units - nb
     cnt = {t: (ng * p + 50) // 100 for t, p in mix[1:]}
     cnt[mix[0][0]] = ng - sum(cnt.values())
-    slot_types = ([4, 5] if boss else []) + [t for t, _ in mix for _ in range(cnt[t])]
+    slot_types = ([4, 5] if boss else [mix[0][0]] * 2 if veh else []) + [t for t, _ in mix for _ in range(cnt[t])]
     assert len(slot_types) == units
     def uk(t):             # fiche du type t ; le boss de la zone peut avoir sa planche et sa vitesse (cle 'boss')
         u = UNITS[t]
@@ -492,6 +517,10 @@ def build_zone(z):
     z80img = intern(masked(load('Z80_12x12.png'), 0, 0, 12, 12, True)) if z.get('z80') else 0      # mission Z80 : image du Z80 (objet ramasse)
     wimg = intern(wframes) if wframes else 0                        # eau : les 3 images (144 octets) et le tampon de l'image de Papi sans jambes (144 octets) : 2 places d'images
     wbuf = intern([0] * 144) if wframes else 0
+    flimg = 0
+    if z.get('flame'):                                              # flammes des bidons explosifs : 3 images de tuile 12 x 8 (144 octets : une place d'image)
+        fg = load(z['flame']); assert len(fg) == 8 and len(fg[0]) == 36
+        flimg = intern([v for f in range(3) for v in opaque(fg, 12 * f, 0, 12, 8)])
     nspr = len(uniq)
     assert SLOT0_ZONE + nspr <= 8 * SPRSLOT + NXS, 'trop d images pour les trous de la page A et les emplacements supplementaires (%d)' % (SLOT0_ZONE + nspr)
     npa = min(nspr, 8 * SPRSLOT - SLOT0_ZONE)          # images rangees dans la page A ; les autres dans XSLOT_BASE
@@ -508,6 +537,13 @@ def build_zone(z):
         cov = boss.get('cover', 500)                  # images a couvert avant de repartir vers Papi (octets 12, 13 : poids faible d'abord)
         hdr[12], hdr[13] = cov & 255, cov >> 8
         hdr[14], hdr[15] = boss.get('burst', 3), boss.get('delay', 100)    # balles par rafale, images entre deux rafales
+    if veh:                                            # vehicule : mode (1 camion de troupes + quota, 2 barre de vie + victoire normale, 3 barre de vie, rafales, fin de zone) ; seuils de la barre ; rafales du WarTruck
+        hdr[95] = veh
+        if veh >= 2:
+            hp = z['hp']
+            hdr[8], hdr[9], hdr[10] = -(-hp * 3 // 4), -(-hp // 2), -(-hp // 4)
+        if veh == 2: hdr[11] = 50                      # ArmyTruck : 500 points
+        if veh == 3: hdr[11], hdr[14], hdr[15] = z.get('pts', 75), 3, 50
     hdr[88], hdr[89], hdr[90], hdr[91] = wimg & 255, wimg >> 8, wbuf & 255, wbuf >> 8
     hdr[92], hdr[93], hdr[94] = 0x10, 0x38, 0      # ptr = GRID+16, in = 0 ; eau : adresse des 3 images et du tampon (0 : pas d'eau), lues par wtr_load
     ext = slot_types + [mix[0][0]] * (12 - units)      # places au-dela de la zone (essais avec plus d'ennemis) : comme le 1er type
@@ -524,8 +560,9 @@ def build_zone(z):
     if boss: cov.append(0)                              # le boss sait tirer a couvert (comme le soldat)
     for s_ in cov: hdr[16 + 12 * 5 + s_] |= 2
     zb = bytearray(hdr)
+    if flimg: spawns[15] = (flimg & 255, flimg >> 8)   # (zone a vehicules : aucun point d'apparition) les 2 derniers octets de la table donnent l'adresse des images de flamme
     assert len(zb) == Z_SPAWN; zb += bytes(v for xy in spawns for v in xy)               # 16 points d'apparition
-    icon = 'MissionKillBossChar8x8.png' if boss else 'MissionZ80Char8x8.png' if z.get('z80') else 'MissionKillChar8x8.png'          # icone de la mission : remplace la tuile "tuer" du bandeau
+    icon = 'MissionKillCar8x8.png' if z.get('veh', 0) >= 2 else 'MissionKillBossChar8x8.png' if boss else 'MissionZ80Char8x8.png' if z.get('z80') else 'MissionKillChar8x8.png'          # icone de la mission : remplace la tuile "tuer" du bandeau
     assert len(zb) == Z_ICON; zb += bytes(opaque(load(icon), 0, 0, 8, 8))
     assert len(zb) == Z_TILEMAP; zb += bytes(tmap_out)
     assert len(zb) == Z_TKIND; zb += bytes(tkind[t] for t in used) + bytes(40 - len(used))
@@ -610,7 +647,7 @@ def build_menu():
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
 VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0x400                      # la voix commence 1 Ko apres le code du boss, dans la banque 7
+VOICE_OFF = 0xA00                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
 def build_voice():
     """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
     PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
@@ -646,7 +683,34 @@ def build_voice():
     VOICE_FR = len(q) * 50 // VOICE_RATE
     return len(packed)
 os.makedirs(os.path.join(ROOT, 'build'), exist_ok=True)
-BOSS_N = (VOICE_OFF + build_voice()) // 512      # secteurs de la banque 7 : code du boss + voix
+VOICE_LEN = build_voice()
+TRUCK_OFF = (VOICE_OFF + VOICE_LEN + 255) // 256 * 256   # images des camions : apres la voix (banque 7)
+BOSS_N = 16                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
+BOSS_PAD = 0x4000 - BOSS_N * 512                      # elle est lue en BOSS_LOAD + BOSS_PAD (derniers 8 Ko de la fenetre) puis decompressee sur place
+
+def build_trucks():
+    """build/trucks.bin : images masquees 24 x 24 (12 octets x 24 lignes, paires masque/donnee : 576 octets) des vehicules.
+       ArmyTruck : 2 images (0 = vers la gauche, comme dessine, 1 = miroir) ; WarTruck : 8 images, (cap * 4 + direction du canon) avec
+       direction 0 droite, 1 gauche, 2 bas, 3 haut (planche : canon a gauche, a droite, en haut, en bas) ; vers la droite : miroir de l'image de la direction opposee"""
+    def mirror(g): return [row[::-1] for row in g]
+    def img(g, y0): return masked(g, 0, y0, 24, 24)
+    out = []
+    a = load('ArmyTruck_24x24.png')
+    out += img(a, 0) + img(mirror(a), 0)
+    w = load('WarTruck_24x96.png')
+    frame = {1: 0, 0: 1, 3: 2, 2: 3}          # direction du canon -> image de la planche (vers la gauche) : planche = canon W, E, N, S
+    for facing in (0, 1):                     # 0 : vers la gauche (cap), 1 : vers la droite (miroir)
+        for aim in range(4):
+            if facing == 0: out += img(w, 24 * frame[aim])
+            else:
+                opp = {0: 1, 1: 0, 2: 2, 3: 3}[aim]
+                out += img(mirror(w), 24 * frame[opp])
+    assert len(out) == 10 * 576
+    ex = load('Explosion12x12.png')                       # 4 images d'explosion 12 x 12, memes octets que celles du moteur mais SANS l'ordre en zigzag (le module des vehicules les affiche ligne par ligne)
+    for fr in range(4): out += masked(ex, fr * 12, 0, 12, 12)
+    assert len(out) == 10 * 576 + 4 * 144
+    open(os.path.join(BUILD, 'trucks.bin'), 'wb').write(bytes(out))
+
 def build_hof(title_rows):
     """src/hof_gfx.asm : titre (bandeau), police 3 x 5 (ASCII 32..95, 5 octets : bits 7..5), cercles rouges de selection"""
     red = enc(2, 2)
@@ -673,7 +737,7 @@ def build_hof(title_rows):
                 db(f, [red if (r[x] and r[x + 1]) else (enc(2, 0) if r[x] else (enc(0, 2) if r[x + 1] else 0)) for x in range(0, w, 2)], 16)
 
 # ---------------------------------------------------------------- ecrans de mission (overlay)
-ACCESS = {2: 'FONZIE', 3: 'MAMIE'}      # codes d'acces des zones (numero de zone -> code), saisis dans le menu (ACCESS CODE)
+ACCESS = {2: 'FONZIE', 3: 'MAMIE', 4: 'SUGAR'}      # codes d'acces des zones (numero de zone -> code), saisis dans le menu (ACCESS CODE)
 def build_access():
     with open(os.path.join(ROOT, 'src', 'access.inc'), 'w') as f:
         f.write('; --- genere par tools/convert.py : codes d acces : numero de zone, code, 0 ; fin : 0 ---\naccess_tab:\n')
@@ -790,7 +854,7 @@ JINGLE_BYTES = 1200 + 1400 + 1000      # (+ jingles de victoire de zone)
 JV_UNUSED = 0      # place reservee pour le jingle de depart de niveau (verifiee par l'assert de l'assemblage)
 def intro_sectors():
     per, blobs = intro_items()
-    return max(4, -(-(2000 + JINGLE_BYTES + sum(len(d) for _, d in blobs)) // 512))
+    return max(4, -(-(2600 + JINGLE_BYTES + sum(len(d) for _, d in blobs)) // 512))
 
 def main():
     global INTRO_N
@@ -890,6 +954,7 @@ def main():
     boss_trk = trk
     json.dump(layout, open(os.path.join(BUILD, 'layout.json'), 'w'))
     build_menu()
+    build_trucks()
     fr, dl, cp = mkmusic.build(os.path.join(ROOT, 'src', 'menu_music.asm'))
     jf, jb = mkmusic.build_raw('MusiqueNiveau_AY.vgm', 'depart de niveau', os.path.join(ROOT, 'src', 'jingle_level.asm'))
     print('jingle de niveau : %d images, %d octets' % (jf, jb))
@@ -907,7 +972,7 @@ def main():
         f.write('NZONES       equ %d\nZSTAGE       equ #%04X\n' % (len(ZONES), ZSTAGE))
         f.write('Z_SPAWN      equ %d\nZ_TILEMAP    equ %d\nZ_TKIND      equ %d\nZ_FRAMES     equ %d\nZ_TILES      equ %d\nZ_SPR        equ %d\n' % (Z_SPAWN, Z_TILEMAP, Z_TKIND, Z_FRAMES, Z_TILES, Z_SPR))
         f.write('TILE_BASE    equ #%04X\nZSPR_DST     equ #%04X\nZSPR_C       equ %d\nWHITE        equ #%02X\n' % (slot_addr(SLOT0_ZONE - 1), slot_addr(SLOT0_ZONE), SPRSLOT - SLOT0_ZONE % SPRSLOT, enc(13, 13)))
-        f.write('MENU_TRK     equ %d\nMENU_N       equ %d\nMENU_LOAD    equ #%04X\nINTRO_TRK    equ %d\nINTRO_N      equ %d\nINTRO_LOAD   equ #%04X\nGO_TRK       equ %d\nGO_N         equ %d\nGO_LOAD      equ #5400\nHOF_TRK      equ %d\nHOF_N        equ %d\nHOF_LOAD     equ #4000\nBOSS_TRK     equ %d\nBOSS_N       equ %d\nBOSS_LOAD    equ #4000\nVOICE_FR     equ %d\n' % (menu_trk, MENU_N, MENU_LOAD, intro_trk, INTRO_N, INTRO_LOAD, gover_trk, GO_N, hof_trk, HOF_N, boss_trk, BOSS_N, VOICE_FR))
+        f.write('MENU_TRK     equ %d\nMENU_N       equ %d\nMENU_LOAD    equ #%04X\nINTRO_TRK    equ %d\nINTRO_N      equ %d\nINTRO_LOAD   equ #%04X\nGO_TRK       equ %d\nGO_N         equ %d\nGO_LOAD      equ #5400\nHOF_TRK      equ %d\nHOF_N        equ %d\nHOF_LOAD     equ #4000\nBOSS_TRK     equ %d\nBOSS_N       equ %d\nBOSS_LOAD    equ #4000\nVOICE_FR     equ %d\nVOICE_OFF    equ #%X\nVOICE_LEN    equ %d\nTRUCK_OFF    equ #%X\nBOSS_PAD     equ #%X\n' % (menu_trk, MENU_N, MENU_LOAD, intro_trk, INTRO_N, INTRO_LOAD, gover_trk, GO_N, hof_trk, HOF_N, boss_trk, BOSS_N, VOICE_FR, VOICE_OFF, VOICE_LEN, TRUCK_OFF, BOSS_PAD))
         f.write('XSLOT_BASE   equ #%04X\nNXS          equ %d\nZ_ICON       equ %d\n' % (XSLOT_BASE, NXS, Z_ICON))
         f.write('tiles        equ ZSTAGE+Z_TILES\ntilemap      equ ZSTAGE+Z_TILEMAP\ntkind        equ ZSTAGE+Z_TKIND\n')
     with open(os.path.join(ROOT, 'src', 'zones.inc'), 'w') as f:
