@@ -35,9 +35,14 @@ static unsigned ign_lo = 0xFFFF, ign_hi = 0, cnt_addr[4], ncnt = 0, last_pc = 0;
 static FILE* wav = 0; static long wav_n = 0; static int wav_on = 0;
 
 static unsigned watch_addr = 0x10000, watch_hits = 0; static uint8_t watch_val; static unsigned trap_pc = 0x10000, trap_n = 0;
+static int sodd_done = 1; static unsigned spmin = 0x200, spmin_pc = 0;
+static unsigned ring[8192], ring_i = 0, ring_last = 0x10000;
 static void dbg(void* ud, uint64_t pins) {
     (void)ud; (void)pins;
-    if (sys.cpu.pc == trap_pc && trap_n++ < 1) { printf("trap %04X : SP=%04X IX=%04X IY=%04X BC=%04X DE=%04X HL=%04X pile :", trap_pc, sys.cpu.sp, sys.cpu.ix, sys.cpu.iy, sys.cpu.bc, sys.cpu.de, sys.cpu.hl); for (int k = 0; k < 12; k++) printf(" %04X", mem_rd(&sys.mem, sys.cpu.sp + 2 * k) | (mem_rd(&sys.mem, sys.cpu.sp + 2 * k + 1) << 8)); printf("\n"); }
+    if (sys.cpu.iff1 && sys.cpu.sp >= 0x100 && sys.cpu.sp <= 0x200 && sys.cpu.sp < spmin) { spmin = sys.cpu.sp; spmin_pc = sys.cpu.pc; }
+    if (sys.cpu.pc != ring_last) { ring_last = sys.cpu.pc; ring[ring_i++ & 8191] = ring_last; }
+    if (sys.cpu.pc == trap_pc && (!getenv("TRAPW") || (unsigned)(mem_rd(&sys.mem, sys.cpu.sp) | (mem_rd(&sys.mem, sys.cpu.sp + 1) << 8)) == (unsigned)strtol(getenv("TRAPW"), 0, 16)) && trap_n++ < 1) { printf("historique PC :"); for (int k = 0; k < 8192; k++) printf(" %04X", ring[(ring_i + k) & 8191]); printf("\n"); printf("trap %04X : SP=%04X IX=%04X IY=%04X BC=%04X DE=%04X HL=%04X pile :", trap_pc, sys.cpu.sp, sys.cpu.ix, sys.cpu.iy, sys.cpu.bc, sys.cpu.de, sys.cpu.hl); for (int k = 0; k < 12; k++) printf(" %04X", mem_rd(&sys.mem, sys.cpu.sp + 2 * k) | (mem_rd(&sys.mem, sys.cpu.sp + 2 * k + 1) << 8)); printf("\n"); }
+    { if (!sodd_done && sys.cpu.iff1 && (sys.cpu.sp & 1)) { sodd_done = 1; printf("SP impair PC=%04X SP=%04X IX=%04X IY=%04X BC=%04X DE=%04X HL=%04X historique :", sys.cpu.pc, sys.cpu.sp, sys.cpu.ix, sys.cpu.iy, sys.cpu.bc, sys.cpu.de, sys.cpu.hl); for (int k = 0; k < 60; k++) printf(" %04X", ring[(ring_i + 8192 - 60 + k) & 8191]); printf("\n"); } }
     if (watch_addr < 0x10000) {
         uint8_t v = mem_rd(&sys.mem, watch_addr);
         if (v != watch_val) { if (watch_hits++ < 100000) { printf("watch %04X : %02X -> %02X, PC suivant = %04X (SP=%04X) IX=%04X BC=%04X DE=%04X HL=%04X pile :", watch_addr, watch_val, v, sys.cpu.pc, sys.cpu.sp, sys.cpu.ix, sys.cpu.bc, sys.cpu.de, sys.cpu.hl); for (int k = 0; k < 8; k++) printf(" %04X", mem_rd(&sys.mem, sys.cpu.sp + 2 * k) | (mem_rd(&sys.mem, sys.cpu.sp + 2 * k + 1) << 8)); printf("\n"); const char* wd = getenv("WATCH_DUMP"); if (wd) { unsigned da = strtol(wd, 0, 16); printf("  mem@%04X :", da); for (int k = 0; k < 192; k++) printf(" %02X", mem_rd(&sys.mem, da + k)); printf("\n"); } } watch_val = v; }
@@ -119,6 +124,8 @@ int main(int argc, char** argv) {
         }
         else if (!strncmp(c, "idle:", 5)) { idle_lo = strtol(v, &p, 16); idle_hi = strtol(p + 1, 0, 16); }
         else if (!strncmp(c, "ign:", 4)) { ign_lo = strtol(v, &p, 16); ign_hi = strtol(p + 1, 0, 16); }
+        else if (!strncmp(c, "spmin:", 6)) { if (v[0]=='r') spmin = 0x200; else printf("SP mini = %04X (profondeur %d octets) a PC=%04X\n", spmin, 0x200 - spmin, spmin_pc); }
+        else if (!strncmp(c, "spodd:", 6)) { sodd_done = 0; }
         else if (!strncmp(c, "trap:", 5)) { trap_pc = strtol(v, 0, 16); }
         else if (!strncmp(c, "watch:", 6)) { watch_addr = strtol(v, 0, 16); watch_val = mem_rd(&sys.mem, watch_addr); }
         else if (!strncmp(c, "cnt:", 4)) { cnt_addr[ncnt] = strtol(v, 0, 16); cnt_n[ncnt++] = 0; }

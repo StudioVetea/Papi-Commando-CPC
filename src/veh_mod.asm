@@ -18,7 +18,7 @@ TH          equ 18              ; hauteur en lignes
 TIMG        equ 2*TW*TH         ; taille d'une image (masque + donnee)
 V_Y0        equ 112-TH              ; y du haut du camion sur la route (rangee 13 ; le bas du camion = le bas de la route : 8 x 14 - 24)
 V_Y1        equ V_Y0              ; (une seule route : rangee 13)
-V_SPEED     equ 80              ; pas de 2 octets : 80/256 x 2 = 0,63 octet par image (1,8 x Papi), mais un dessin toutes les 3 images
+V_SPEED     equ 128             ; 1 octet toutes les 2 images exactement (25 pas/s, regulier) : 0,5 octet par image (1,4 x Papi)
 V_HP        equ 50              ; points de vie du camion de troupes quand ce n'est pas la mission du camion
 V_DROP      equ 100             ; images entre deux unites larguees (2 s)
 V_XMAX      equ 90              ; x + 12 : la valeur 90 = tout juste sorti par la droite ; 0 = tout juste sorti par la gauche
@@ -339,13 +339,11 @@ mv_truck:   ld a,(v_act)
             ld a,(v_xo)
             jr nz,.left
             inc a
-            inc a                       ; pas de 2 octets : deux fois moins de dessins
             ld (v_xo),a
             cp V_XMAX
             jr z,.leave
             jr .mv
 .left       dec a
-            dec a
             ld (v_xo),a
             jr z,.leave
 .mv         call mv_drawcheck
@@ -619,17 +617,16 @@ mv_wake:    ld c,a
 mv_blit:    push bc
             push de
             call scr_addr
+            ex de,hl                    ; HL = source (masque, donnee), DE = ecran
             ld a,(bl_n)
             ld b,a
 .b          ld a,(de)
-            inc de
             and (hl)
-            ld c,a
-            ld a,(de)
-            inc de
-            or c
-            ld (hl),a
             inc hl
+            or (hl)
+            inc hl
+            ld (de),a
+            inc de
             djnz .b
             pop de
             ld a,(bl_s)

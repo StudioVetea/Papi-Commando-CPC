@@ -8,7 +8,7 @@ base = int(re.search(r'^VARBASE\s+equ\s+#([0-9A-Fa-f]+)', s, re.M).group(1), 16)
 out = []
 for m in re.finditer(r'^(\w+)\s+equ VARBASE\+(\d+)', s, re.M):
     out.append('%s #%X B0 L' % (m.group(1).upper(), base + int(m.group(2))))
-pv = base + 215
+pv = base + int(re.search(r"^PVARS\s+equ VARBASE\+(\d+)", s, re.M).group(1))
 for m in re.finditer(r'^(\w+)\s+equ PVARS(?:\+(\d+))?\b', s, re.M):
     out.append('%s #%X B0 L' % (m.group(1).upper(), pv + int(m.group(2) or 0)))
 m = re.search(r'^vars_end\s+equ VARBASE\+(\d+)', s, re.M)

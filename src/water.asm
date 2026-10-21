@@ -19,6 +19,7 @@
 ;   au plus WTR_MAXD cases par image (environ 2000 cycles chacune). Une case touchee par un sprite d'ennemi
 ;   (bit 6 : cases reservees) est sautee ; les balles sont redessinees a chaque image, Papi apres l'eau (ordre de la boucle).
 ;==============================================================================
+WTR_Z0      equ #0000                   ; bloc 1b (wtr_frame) : vecteurs RST inutilises, pour liberer de la pile
 WTR_HI      equ #39A0                   ; bloc 2 (wtr_draw) : trou libre de la grille (#39A0-#39FF)
 WTR_LO      equ #31E3                   ; bloc 3 (wtr_load) : trou libre des tables (#31E3-#31FF ; lz_off occupe #31E1-#31E2)
 wtr_img     equ #31D8                   ; variables : 7 octets recopies de l'en-tete de zone (hdr[88..94]) + wtr_n
@@ -65,7 +66,15 @@ wtr_tick:
             ld a,h
             ld (psy),a
             ld a,(frame)
-            rrca
+            ld e,a
+            ld a,(veh_on)
+            or a
+            ld a,e
+            jr z,.ph
+            rrca                        ; zone a vehicules : phase toutes les 32 images et balayage une image sur 2 (economie)
+            bit 0,e
+            ret nz
+.ph         rrca
             rrca
             rrca
             rrca
@@ -122,6 +131,12 @@ wtr_tick:
 .done       ld (wtr_ptr),hl
             ret
 
+wzp_end:
+water_zp_len equ wzp_end-wzp_start
+            assert wzp_end<=#01C8       ; la pile descend jusqu a #01C8 au plus : 56 octets (v60 : wtr_frame est passee en #0000)
+
+            org WTR_Z0,water_src+water_zp_len
+wz0_start:
 ; HL = image de Papi (144 octets) -> HL = image a dessiner : dans l'eau, une copie dont les 6 dernieres lignes sont transparentes
 wtr_frame:
             ld a,(wtr_in)
@@ -144,11 +159,11 @@ wtr_frame:
             pop hl
             ret
 
-wzp_end:
-water_zp_len equ wzp_end-wzp_start
-            assert wzp_end<=#01E0       ; la pile descend jusqu'a #01E0 au plus
+wz0_end:
+water_z0_len equ wz0_end-wz0_start
+            assert wz0_end<=#0038       ; (#0000-#0037 : vecteurs RST du micrologiciel, inutilises ; #0038 = l'interruption)
 
-            org WTR_HI,water_src+water_zp_len
+            org WTR_HI,water_src+water_zp_len+water_z0_len
 whi_start:
 ; HL = case de la grille, E = n x 16 : dessine l'image (1 2 3 2 -> 0 1 2 1) de la tuile, a l'ecran et dans le miroir
 wtr_draw:
@@ -214,7 +229,7 @@ whi_end:
 water_hi_len equ whi_end-whi_start
             assert whi_end<=#3A00       ; le trou finit avant le 1er champ de distances
 
-            org WTR_LO,water_src+water_zp_len+water_hi_len
+            org WTR_LO,water_src+water_zp_len+water_z0_len+water_hi_len
 wlo_start:
 ; chargement de la zone (fin de load_zone_data) : parametres de l'eau lus dans l'en-tete du fichier de zone
 wtr_load:
@@ -231,4 +246,4 @@ wlo_end:
 water_lo_len equ wlo_end-wlo_start
             assert wlo_end<=#3200
 
-            org water_src+water_zp_len+water_hi_len+water_lo_len
+            org water_src+water_zp_len+water_z0_len+water_hi_len+water_lo_len

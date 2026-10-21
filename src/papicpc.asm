@@ -5424,10 +5424,14 @@ boot:
             ld bc,water_zp_len
             ldir
             ld hl,water_src+water_zp_len
+            ld de,WTR_Z0
+            ld bc,water_z0_len
+            ldir
+            ld hl,water_src+water_zp_len+water_z0_len
             ld de,WTR_HI
             ld bc,water_hi_len
             ldir
-            ld hl,water_src+water_zp_len+water_hi_len
+            ld hl,water_src+water_zp_len+water_z0_len+water_hi_len
             ld de,WTR_LO
             ld bc,water_lo_len
             ldir
