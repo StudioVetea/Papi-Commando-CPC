@@ -1002,3 +1002,8 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 ### v58 : sprites des vehicules 22 x 18
 - Nouveaux sprites de Vetea : `ArmyTruck_22x18.png` et `WarTruck_22x72.png` (4 images de 22 x 18) : 11 octets x 18 lignes (396 octets par image au lieu de 576). Surface : -45 % : effacement et blit sensiblement plus rapides, banque 7 : 8060 / 8192 octets.
 - Le module est parametre par `TW` (11), `TH` (18) et `TIMG` : contact, effacement, position sur la route (`V_Y0` = 112 - TH : les roues restent au bas de la route), largage (derriere le camion, a hauteur de roues), visee, explosions, zone de touche des balles. Point de depart des balles du WarTruck : `mv_ktab` = (5,2) (5,6) (5,4) (1,2) a ajuster si la bouche du canon semble decalee.
+
+### v59 : repeint partiel du vehicule (fluidite)
+- **Mesures** (`cpcrun prof`, 1000 images, bot ; avant -> apres) : zone 4 M4 WarTruck 47,9 -> 49,4 fps, images > 20 ms ~5 % -> ~2,7 %, max 32 -> 28 ms ; M1 ArmyTruck 48,7 -> 49,1 fps, images > 20 ms 4 % -> 2,3 % ; M4 Papi immobile 48,8 -> 49,9 fps (max 24 -> 21,7 ms). Reference zone 0 : 50,1 fps, 10 ms/image.
+- **Cause** : le repeint de priorite (`mv_late`) redessinait tout le camion des qu'un ennemi ou une balle le touchait. Il ne repeint plus que la zone recouverte (`mv_sub` : intersection de l'element 6 x 12 et du camion, source decalee en consequence).
+- Banque 7 : `VOICE_OFF` = #C00, 8187 / 8192 octets compresses (plein : plus de place pour de nouveaux ajouts dans le module sans alleger).

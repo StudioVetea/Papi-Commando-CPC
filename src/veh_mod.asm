@@ -112,7 +112,7 @@ mv_late:    ld a,(v_ox)
             or a
             jr z,.en
             call mv_ovl
-            jp c,mv_paint
+            call c,mv_sub
 .en         add ix,de
             dec h
             jr nz,.e
@@ -123,11 +123,104 @@ mv_late:    ld a,(v_ox)
             or a
             jr z,.bn
             call mv_ovl
-            jp c,mv_paint
+            call c,mv_sub
 .bn         add ix,de
             dec h
             jr nz,.b
             ret
+
+; repeint la partie du camion recouverte par l'element IX (ennemi ou balle : 6 octets x 12 lignes en (IX+1, IX+2)) ; conserve BC, DE, HL, IX
+mv_sub:     push bc
+            push de
+            push hl
+            call mv_sub1
+            pop hl
+            pop de
+            pop bc
+            ret
+mv_sub1:    ld a,(v_of)
+            inc a
+            ret z
+            ld a,(nw_lo)
+            ld b,a
+            ld a,(ix+1)
+            cp b
+            jr nc,.a
+            ld a,b
+.a          ld (sb_x),a                 ; x0 = max(x, bord gauche visible)
+            ld d,a
+            ld a,(ix+1)
+            add a,6
+            ld e,a
+            ld a,(nw_hi)
+            cp e
+            jr nc,.b
+            ld e,a                      ; x1 = min(x + 6, bord droit visible)
+.b          ld a,e
+            sub d
+            ret z
+            ret c
+            ld (bl_n),a
+            ld a,(v_y)
+            ld b,a
+            ld a,(ix+2)
+            cp b
+            jr nc,.c
+            ld a,b
+.c          ld (sb_y),a                 ; y0
+            ld c,a
+            ld a,(ix+2)
+            add a,12
+            ld e,a
+            ld a,b
+            add a,TH
+            cp e
+            jr nc,.d
+            ld e,a                      ; y1
+.d          ld a,e
+            sub c
+            ret z
+            ret c
+            ld (bl_h),a
+            ld a,c
+            sub b                       ; lignes sautees en haut de l'image
+            ld hl,0
+            jr z,.l0
+            ld b,a
+            ld de,2*TW
+.l          add hl,de
+            djnz .l
+.l0         ld a,(v_xo)
+            ld c,a
+            ld a,(sb_x)
+            add a,TW
+            sub c
+            add a,a                     ; 2 x (x0 + TW - xo) octets
+            ld e,a
+            ld d,0
+            add hl,de
+            ld a,(v_of)
+            add a,a
+            ld e,a
+            push hl
+            ld hl,mv_sprtab
+            add hl,de
+            ld e,(hl)
+            inc hl
+            ld d,(hl)
+            pop hl
+            add hl,de
+            ex de,hl                    ; DE = source
+            ld a,2*TW
+            ld (bl_s),a
+            ld a,(sb_x)
+            ld b,a
+            ld a,(sb_y)
+            ld c,a
+            ld a,(v_fl)
+            or a
+            jp z,mv_blit
+            jp mv_blitw
 
 ; flash blanc du vehicule touche : v_fl images ; l'image est redessinee au debut et a la fin
 mv_flash:   ld a,(v_fl)
@@ -1270,6 +1363,8 @@ mx_c        ds 1
 my_c        ds 1
 v_fxs       ds 9
 v_bar       ds NBAR*BARSZ
+sb_x        ds 1
+sb_y        ds 1
 il_on       ds 1
 il_fn       ds 2
 il_n        ds 1
