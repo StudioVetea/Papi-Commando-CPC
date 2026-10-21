@@ -49,12 +49,34 @@ mv_tick:    ld a,(p_state)
             or a
             call z,mv_init
             call mv_truck
+            call mv_contact
             call mv_fx
             call mv_flames
             ld a,(frame)
             and 3
             ret nz
             jp mv_hazard
+
+; le contact du camion est mortel : Papi (6 octets x 12 lignes) touche le rectangle du camion (12 x 24)
+mv_contact: ld a,(v_act)
+            or a
+            ret z
+            ld a,(p_state)
+            or a
+            ret nz
+            ld a,(p_x)
+            ld hl,v_xo
+            sub (hl)
+            add a,17
+            cp 17
+            ret nc
+            ld a,(p_y)
+            ld hl,v_y
+            sub (hl)
+            add a,11
+            cp 35
+            ret nc
+            jp player_hit
 
 ; preparation de la mission : variables, liste des bidons
 mv_init:    ld a,1
@@ -906,12 +928,15 @@ mv_fdraw:   ld a,d
             push de
             call b1_wtr
             pop de
+            ld a,(iy+3)
+            dec a
+            jr z,.top                   ; bidon intact : la case du haut seulement
             ld l,(iy+0)
             ld h,(iy+1)
             ld bc,16
             add hl,bc
             call b1_wtr
-            pop hl
+.top        pop hl
             ld (wtr_img),hl
             ret
 
@@ -935,8 +960,9 @@ mv_flames:  ld a,(v_nb)
             ld iy,v_bar
             add iy,de
             ld a,(iy+3)
-            cp 2
-            ret nz
+            cp 3
+            ret nc
+            ld c,a                      ; c = 1 : bidon intact (seule la case du haut brule) ; 2 : en flammes (deux cases)
             ld a,(frame)
             rrca
             rrca
@@ -950,11 +976,15 @@ mv_flames:  ld a,(v_nb)
             ld h,(iy+1)
             bit 6,(hl)
             ret nz
+            dec c
+            jr z,.one
             ld bc,16
             add hl,bc
             bit 6,(hl)
             ret nz
             ld (iy+4),d
+            jp mv_fdraw
+.one        ld (iy+4),d
             jp mv_fdraw
 
 ; les flammes brulent Papi et les ennemis qui les touchent (cases des pieds) : une image sur 4
