@@ -235,11 +235,11 @@ ZINFO = {1: dict(title='OUTPOST C-01', tmx='ZoneTest.tmx', tileset='TileSet1.png
          3: dict(title='HIDDEN HEADQUARTER', tmx='Zone3.tmx', tileset=['TileSet1.png', 'TileSet2.png'], obstacle=['TileSet1Obstacle.png', 'TileSet2Obstacles.png'],
                  spawn='auto', first=1, water='Eau_3frames_12x8.png'),
          # zone 4 : 1 tileset (numeros de tuile 117-156 dans le TMX), eau, bidons explosifs (carre blanc) et routes (carre noir) ; les ennemis viennent des vehicules (veh)
-         4: dict(title='TWIN ROADS', tmx='Zone4.tmx', tileset='TileSet4.png', obstacle='TileSet4Obstacles.png', spawn=[(0, 0)], first=1, water='Eau_3frames_12x8.png',
+         4: dict(title='TWIN ROADS', tmx='Zone4.tmx', tileset='TileSet4.png', obstacle='TileSet4Obstacles.png', spawn='auto', first=1, water='Eau_3frames_12x8.png',
                  gid0=117, flame='Flamme_3frames_12x8_Z4.png')}
 def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None):
     zi = ZINFO[zn]
-    if veh: units += 2                          # vehicule : 2 places d'ennemi factices (0 et 1, jamais utilisees : elles font cesser les hooks du boss) + les unites transportees
+    if veh >= 2: units += 2                     # vehicule a barre de vie : 2 places d'ennemi factices (0 et 1, jamais utilisees : elles font cesser les hooks du boss) + les unites transportees
     z = dict(name='zone%02d' % n, zn=zn, spawn_first=zi.get('first', 0), mnum=n, z80=z80, title=zi['title'], units=units, kills=time if time else kills, mix=mix, count=set(count), time=bool(time),
              art=list(art), units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'))
     if time: z['text'] = ['TIME ATTACK !', 'SURVIVE %d S.' % time]
@@ -417,7 +417,7 @@ def build_zone(z):
     a = Image.open(os.path.join(A, ts_name)).convert('RGB')
     b = Image.open(os.path.join(A, ob_name)).convert('RGB')
     KIND = {(0, 128, 0): 0x00, (255, 0, 0): 0x03, (0, 128, 255): 0x01, (255, 255, 0): 0x80, (128, 0, 255): 0x07,    # violet : obstacle normal (bits 0-1 comme le rouge) mais pas un abri (bit 2), sortie des casernes
-            (255, 0, 210): 0x08, (255, 255, 255): 0x07}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
+            (255, 0, 210): 0x08, (255, 255, 255): 0x17}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
     PURPLE = (128, 0, 255)
     tpurple = set(); twater = set()
     tiles_img = load(ts_name)
@@ -478,7 +478,7 @@ def build_zone(z):
         if z.get('veh'): spawns.append((c * 6, y)); continue
         assert 0 <= c < 13 and 0 <= r < 24 and tkind[tmap[r][c]] == 0, 'zone %s : point d apparition (%d,%d) pas en zone verte' % (z['name'], c, y)
         spawns.append((c * 6, y))
-    assert 1 <= len(spawns) <= 16
+    assert 1 <= len(spawns) <= (15 if z.get('flame') else 16)
     nspawn = len(spawns)
     spawns += [spawns[i % nspawn] for i in range(16 - nspawn)]
     used = sorted({t for row in tmap for t in row})
@@ -488,11 +488,11 @@ def build_zone(z):
     # repartition des unites : le premier type recoit le reste, les autres leur pourcentage arrondi ; les types se suivent
     #   (boss : ses deux places d'abord, puis la garde)
     units = z['units']; mix = sorted(z['mix']); assert sum(p for _, p in mix) == 100 and units <= 12
-    boss = z.get('boss'); veh = z.get('veh', 0); nb = 2 if (boss or veh) else 0
+    boss = z.get('boss'); veh = z.get('veh', 0); nb = 2 if (boss or veh >= 2) else 0
     ng = units - nb
     cnt = {t: (ng * p + 50) // 100 for t, p in mix[1:]}
     cnt[mix[0][0]] = ng - sum(cnt.values())
-    slot_types = ([4, 5] if boss else [mix[0][0]] * 2 if veh else []) + [t for t, _ in mix for _ in range(cnt[t])]
+    slot_types = ([4, 5] if boss else [mix[0][0]] * 2 if veh >= 2 else []) + [t for t, _ in mix for _ in range(cnt[t])]
     assert len(slot_types) == units
     def uk(t):             # fiche du type t ; le boss de la zone peut avoir sa planche et sa vitesse (cle 'boss')
         u = UNITS[t]
@@ -647,7 +647,7 @@ def build_menu():
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
 VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0xA60                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
+VOICE_OFF = 0xAA0                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
 def build_voice():
     """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
     PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
@@ -707,8 +707,8 @@ def build_trucks():
                 out += img(mirror(w), 24 * frame[opp])
     assert len(out) == 10 * 576
     ex = load('Explosion12x12.png')                       # 4 images d'explosion 12 x 12, memes octets que celles du moteur mais SANS l'ordre en zigzag (le module des vehicules les affiche ligne par ligne)
-    for fr in range(4): out += masked(ex, fr * 12, 0, 12, 12)
-    assert len(out) == 10 * 576 + 4 * 144
+    for fr in range(3): out += masked(ex, fr * 12, 0, 12, 12)
+    assert len(out) == 10 * 576 + 3 * 144
     open(os.path.join(BUILD, 'trucks.bin'), 'wb').write(bytes(out))
 
 def build_hof(title_rows):

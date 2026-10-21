@@ -1991,15 +1991,17 @@ DT_FY       equ 3
 
 ;--- pas encore en jeu : attendre puis entrer par un bord ---------------------
 enemy_absent:
-            ld a,(veh_on)               ; zone 4 : les ennemis ne viennent que du vehicule (module des vehicules)
-            or a
-            jp nz,enemy_next
             ld a,(bk_on)
             or a
             jr z,enemy_absent2
             ld a,ixl
             cp 32
-            jp c,bk_absent              ; corps ou tete du boss
+            jr nc,.nb
+            ld a,(veh_on)               ; zone 4 (vehicule a barre de vie) : les 2 premieres places sont factices
+            or a
+            jp nz,enemy_next
+            jp bk_absent                ; corps ou tete du boss
+.nb
             xor a
             ld (ymin),a
 enemy_absent2:

@@ -31,9 +31,9 @@ BOSS_TRK     equ 39
 BOSS_N       equ 16
 BOSS_LOAD    equ #4000
 VOICE_FR     equ 119
-VOICE_OFF    equ #A60
+VOICE_OFF    equ #AA0
 VOICE_LEN    equ 7168
-TRUCK_OFF    equ #2660
+TRUCK_OFF    equ #26A0
 BOSS_PAD     equ #2000
 XSLOT_BASE   equ #2C10
 NXS          equ 7

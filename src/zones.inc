@@ -46,14 +46,14 @@ zone_dir:
  dw #615D
  db 0
  db 27,2,7
- dw #57C2
+ dw #57D6
  db 0
  db 28,0,7
- dw #5807
+ dw #5827
  db 0
  db 28,7,7
- dw #57AA
+ dw #57C7
  db 0
  db 29,5,7
- dw #57BC
+ dw #57D1
  db 0

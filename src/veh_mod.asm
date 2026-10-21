@@ -13,12 +13,13 @@
 ;   Le module ne voit pas le miroir (banque 1) : il efface par la rampe b1_restore et dessine par-dessus (ecran) ; b1_wtr dessine une tuile (ecran ET miroir).
 ;   Appele par veh_call (boss.asm) : A = 1 image, 2 balle de Papi (IX), 3 explosion de grenade, 4 case de bidon touchee (HL).  IX et IY conserves.
 ;==============================================================================
-V_Y0        equ 56              ; y du haut du camion sur la route de la rangee 6 (le bas du camion = le bas de la route : 8 x 7 - 24)
-V_Y1        equ 128             ; ... et de la rangee 18
-V_SPEED     equ 179             ; 179/256 = 0,70 octet par image = 2 x Papi (PSPEED_X = 90)
+V_Y0        equ 88              ; y du haut du camion sur la route (rangee 13 ; le bas du camion = le bas de la route : 8 x 14 - 24)
+V_Y1        equ 88              ; (une seule route : rangee 13)
+V_SPEED     equ 161             ; 161/256 = 0,63 octet par image = 1,8 x Papi (2 x Papi - 10 %)
 V_HP        equ 50              ; points de vie du camion de troupes quand ce n'est pas la mission du camion
 V_DROP      equ 100             ; images entre deux unites larguees (2 s)
 V_XMAX      equ 90              ; x + 12 : la valeur 90 = tout juste sorti par la droite ; 0 = tout juste sorti par la gauche
+V_FLASH     equ 6               ; images de flash blanc quand le vehicule est touche
 V_BURST     equ 3
 V_BSPACE    equ 5
 V_BDELAY    equ 50
@@ -48,6 +49,7 @@ mv_tick:    ld a,(p_state)
             ld a,(v_init)
             or a
             call z,mv_init
+            call mv_flash
             call mv_truck
             call mv_contact
             call mv_fx
@@ -78,6 +80,17 @@ mv_contact: ld a,(v_act)
             ret nc
             jp player_hit
 
+; flash blanc du vehicule touche : v_fl images ; l'image est redessinee au debut et a la fin
+mv_flash:   ld a,(v_fl)
+            or a
+            ret z
+            dec a
+            ld (v_fl),a
+            ret nz
+            ld a,#FF                    ; fin du flash : redessin normal
+            ld (v_of),a
+            ret
+
 ; preparation de la mission : variables, liste des bidons
 mv_init:    ld a,1
             ld (v_init),a
@@ -98,8 +111,8 @@ mv_init:    ld a,1
             ld de,v_bar
             ld bc,384
 .sc         ld a,(hl)
-            and 7
-            cp 7
+            and #1F                     ; bidon : bits 0-2 et 4 (les casernes n'ont pas le bit 4)
+            cp #17
             jr nz,.nx
             push bc
             push hl
@@ -108,8 +121,8 @@ mv_init:    ld a,1
             ld a,(hl)
             pop hl
             pop bc
-            and 7
-            cp 7
+            and #1F                     ; bidon : bits 0-2 et 4 (les casernes n'ont pas le bit 4)
+            cp #17
             jr z,.nx                    ; la case du haut est aussi un bidon : celle-ci est le bas
             ld a,(v_nb)
             cp NBAR
@@ -153,13 +166,10 @@ mv_truck:   ld a,(v_act)
             jr z,.enter
             dec (hl)
             ret
-.enter      call rand                   ; route et sens au hasard
+.enter      call rand                   ; sens au hasard (une seule route)
             ld b,a
             ld a,V_Y0
-            bit 0,b
-            jr z,.y
-            ld a,V_Y1
-.y          ld (v_y),a
+            ld (v_y),a
             ld a,0                      ; du bord gauche vers la droite...
             ld c,0
             bit 1,b
@@ -215,9 +225,9 @@ mv_truck:   ld a,(v_act)
             ret
 .try        xor a
             ld (v_got),a
-            ld a,3
+            ld a,2
             ld (v_k),a
-.dk         ld a,(v_k)                  ; 3 unites a la suite, derriere le camion (x : 0 a 72)
+.dk         ld a,(v_k)                  ; 2 unites a la suite, derriere le camion (x : 0 a 72)
             dec a
             ld c,a
             add a,a
@@ -365,8 +375,13 @@ mv_draw:    call mv_image
             ld b,a
             ld a,(v_y)
             ld c,a
-            call mv_blit
-            ld a,(v_xo)                 ; les ennemis recouverts se redessinent (apres le camion : ils passent devant)
+            ld a,(v_fl)
+            or a
+            jr z,.nw
+            call mv_blitw               ; flash : tous les pixels opaques en blanc
+            jr .bw
+.nw         call mv_blit
+.bw         ld a,(v_xo)                 ; les ennemis recouverts se redessinent (apres le camion : ils passent devant)
             jp mv_wake
 
 ; efface le camion (rectangle affiche) et reveille les ennemis dessous
@@ -442,12 +457,48 @@ mv_blit:    push bc
             jr nz,mv_blit
             ret
 
+; comme mv_blit, mais tous les pixels opaques (masque a 0) sont blancs
+mv_blitw:   push bc
+            push de
+            call scr_addr
+            ld a,(bl_n)
+            ld b,a
+.b          ld a,(de)
+            inc de
+            inc de
+            ld c,a                      ; masque
+            ld a,(hl)
+            xor WHITE
+            and c
+            xor WHITE
+            ld (hl),a
+            inc hl
+            djnz .b
+            pop de
+            ld a,(bl_s)
+            add a,e
+            ld e,a
+            jr nc,.n
+            inc d
+.n          pop bc
+            inc c
+            ld hl,bl_h
+            dec (hl)
+            jr nz,mv_blitw
+            ret
+
 ; larguer une unite : une place libre (a partir de la 3e : les deux premieres sont factices), devant le camion. Sortie : C = largue
 mv_drop:    ld a,(nb_wanted)
-            sub 2
+            ld ix,enemies
+            ld hl,bk_on
             ld b,a
-            ld ix,enemies+2*ESIZE
-            ld de,ESIZE
+            ld a,(hl)
+            or a
+            jr z,.fs
+            ld ix,enemies+2*ESIZE       ; (barre de vie : les 2 premieres places sont factices)
+            dec b
+            dec b
+.fs            ld de,ESIZE
 .f          ld a,(ix+E_STATE)
             or a
             jr z,.free
@@ -605,7 +656,11 @@ mv_dmg:     ld c,a
 .s2         ld (hl),a
             or a
             jp z,mv_die1
-.hit        ld a,3
+.hit        ld a,V_FLASH
+            ld (v_fl),a
+            ld a,#FF                    ; redessin tout de suite (en blanc)
+            ld (v_of),a
+            ld a,3
             jp sfx
 
 ; coordonnees des deux explosions du camion : B = x gauche, D = x droit, C = y
@@ -685,7 +740,7 @@ mv_fxadd:   ld hl,v_fxs+2               ; B = x, C = y
             dec a
             jr nz,.f
             ret
-.free       ld (hl),17
+.free       ld (hl),13
             dec hl
             ld (hl),c
             dec hl
@@ -707,7 +762,7 @@ mv_fx:      ld ix,v_fxs
             srl a
             srl a
             ld c,a
-            ld a,4
+            ld a,3
             sub c
             ld hl,EXPL_DATA
             ld de,144
@@ -788,8 +843,8 @@ mv_barrel:  ld a,(veh_on)
             ld bc,-16
             add hl,bc
             ld a,(hl)
-            and 7
-            cp 7
+            and #1F                     ; bidon : bits 0-2 et 4 (les casernes n'ont pas le bit 4)
+            cp #17
             jr z,.top                   ; la case du dessus est un bidon : HL est la case du haut
             ex de,hl
 .top        ld a,(v_nb)
@@ -870,13 +925,13 @@ mv_explode: ld (iy+3),2
             ld l,(iy+0)
             ld h,(iy+1)
             ld a,(hl)
-            and #F8
+            and #E8
             or 4
             ld (hl),a
             ld de,16
             add hl,de
             ld a,(hl)
-            and #F8
+            and #E8
             or 4
             ld (hl),a
             ld d,0                      ; flammes : image 0, tout de suite (les explosions effacent depuis le miroir)
@@ -1082,6 +1137,7 @@ v_bn        ds 1
 v_bt        ds 1
 v_bcd       ds 1
 v_bi        ds 1
+v_fl        ds 1
 v_dxx       ds 1
 v_k         ds 1
 v_got       ds 1
