@@ -130,7 +130,7 @@ def lz_compress(data):
     def best(pos):
         if pos + 4 > n: return (0, 0)
         key = bytes(data[pos:pos + 4]); bl, bo = 0, 0
-        for cand in reversed(chains.get(key, [])[-48:]):
+        for cand in reversed(chains.get(key, [])[-20000:]):
             if pos - cand > 65535: break
             l = 0
             while pos + l < n and data[cand + l] == data[pos + l]: l += 1
@@ -149,7 +149,7 @@ def lz_compress(data):
         l, o = best(i)
         if l >= 4:
             l2, o2 = best(i + 1)          # paresse : une copie plus longue juste apres ?
-            if l2 > l + 1: add(i); i += 1; continue
+            if l2 > l: add(i); i += 1; continue
             emit(data[lit0:i], l, o)
             for k in range(i, i + l): add(k)
             i += l; lit0 = i
@@ -647,7 +647,7 @@ def build_menu():
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
 VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0xAA0                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
+VOICE_OFF = 0xB80                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
 def build_voice():
     """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
     PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""

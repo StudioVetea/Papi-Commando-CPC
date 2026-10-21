@@ -234,6 +234,8 @@ wait_end:
 .tl         ld (tick_lim),a
             call enemies_update         ; puis les ennemis, tant qu'il reste du temps
             call crate_draw             ; la caisse parachutee, en dernier : premier plan
+            ld a,5                      ; le vehicule repasse devant tout
+            call veh_if
             jr .end
 .frozen     ld a,(fz_n)                 ; quelques images encore : les ennemis recouverts par Papi (son effacement a sa mort)
             or a                        ; se redessinent, car la scene figee ne les repare plus

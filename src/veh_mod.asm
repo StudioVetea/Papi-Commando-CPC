@@ -39,7 +39,9 @@ mv_disp:    dec a
             jp z,mv_bullet
             dec a
             jp z,mv_gren
-            jp mv_barrel
+            dec a
+            jp z,mv_barrel
+            jp mv_late
 
 mv_tick:    ld a,(p_state)
             cp 3
@@ -52,6 +54,7 @@ mv_tick:    ld a,(p_state)
             call mv_flash
             call mv_truck
             call mv_contact
+            call mv_crush
             call mv_fx
             call mv_flames
             ld a,(frame)
@@ -79,6 +82,78 @@ mv_contact: ld a,(v_act)
             cp 35
             ret nc
             jp player_hit
+
+; le vehicule ecrase les ennemis vivants qu'il touche
+mv_crush:   ld a,(v_act)
+            or a
+            ret z
+            ld a,(v_xo)
+            ld c,a
+            ld a,(v_y)
+            ld b,a
+            ld ix,enemies
+            ld de,ESIZE
+            ld h,MAXENEMY
+.l          ld a,(ix+E_STATE)
+            dec a
+            jr nz,.n
+            call mv_ovl
+            jr nc,.n
+            push bc
+            push de
+            push hl
+            call enemy_kill_now
+            pop hl
+            pop de
+            pop bc
+.n          add ix,de
+            dec h
+            jr nz,.l
+            ret
+
+; (IX+1, IX+2) = (x, y) dans le rectangle du camion (C = xo, B = y) ? carry si oui
+mv_ovl:     ld a,(ix+1)
+            sub c
+            add a,17
+            cp 17
+            ret nc
+            ld a,(ix+2)
+            sub b
+            add a,11
+            cp 35
+            ret
+
+; fin d'image : si quelque chose a ete dessine sur le camion (ennemi, balle, explosion), on repeint le camion par-dessus
+mv_late:    ld a,(v_ox)
+            cp #FF
+            ret z
+            ld a,(v_xo)
+            ld c,a
+            ld a,(v_y)
+            ld b,a
+            ld ix,enemies
+            ld de,ESIZE
+            ld h,MAXENEMY
+.e          ld a,(ix+E_STATE)
+            or a
+            jr z,.en
+            call mv_ovl
+            jp c,mv_paint
+.en         add ix,de
+            dec h
+            jr nz,.e
+            ld ix,bullets
+            ld de,BSIZE
+            ld h,NBUL
+.b          ld a,(ix+B_ON)
+            or a
+            jr z,.bn
+            call mv_ovl
+            jp c,mv_paint
+.bn         add ix,de
+            dec h
+            jr nz,.b
+            ret
 
 ; flash blanc du vehicule touche : v_fl images ; l'image est redessinee au debut et a la fin
 mv_flash:   ld a,(v_fl)
@@ -342,7 +417,7 @@ mv_draw:    call mv_image
             ld (v_ox),a
             ld a,(v_y)
             ld (v_oy),a
-            ld a,(nw_hi)                ; le sprite : colonnes visibles [nw_lo, nw_hi)
+mv_paint:   ld a,(nw_hi)                ; le sprite : colonnes visibles [nw_lo, nw_hi)
             ld hl,nw_lo
             sub (hl)
             ret z
@@ -378,11 +453,9 @@ mv_draw:    call mv_image
             ld a,(v_fl)
             or a
             jr z,.nw
-            call mv_blitw               ; flash : tous les pixels opaques en blanc
-            jr .bw
-.nw         call mv_blit
-.bw         ld a,(v_xo)                 ; les ennemis recouverts se redessinent (apres le camion : ils passent devant)
-            jp mv_wake
+            jp mv_blitw                 ; flash : tous les pixels opaques en blanc
+.nw         jp mv_blit
+            ret                         ; le camion est prioritaire : rien ne le recouvre (mv_late)
 
 ; efface le camion (rectangle affiche) et reveille les ennemis dessous
 mv_erase:   ld a,(v_ox)
@@ -530,38 +603,62 @@ mv_war:     ld a,(p_state)
             ret c
             cp 79
             ret nc
-            ld a,(v_bn)
-            or a
-            jr nz,.in
+            call mv_aim
             ld a,(v_bcd)
             or a
-            jr z,.start
+            jr z,.fire
             dec a
             ld (v_bcd),a
             ret
-.start      ld a,V_BURST
-            ld (v_bn),a
-            xor a
-            ld (v_bt),a
-            ld a,(v_aim)
-            inc a
-            and 3
-            ld (v_aim),a
-            ld a,11                     ; Tir Boss : un seul son pour toute la rafale
-            jp sfx
-.in         ld a,(v_bt)
+.fire       ld a,V_BDELAY
+            ld (v_bcd),a
+            ld a,11
+            call sfx
+            jp mv_shoot
+; vise Papi dans les 4 directions : horizontal si 3 |dx| >= |dy|, sinon vertical
+mv_aim:     ld a,(v_xo)
+            sub 6
+            ld b,a
+            ld a,(p_x)
+            sub b
+            ld b,a                      ; dx
+            ld a,(v_y)
+            add a,12
+            ld c,a
+            ld a,(p_y)
+            add a,6
+            sub c
+            ld c,a                      ; dy
+            ld a,b
             or a
-            jr z,.shoot
-            dec a
-            ld (v_bt),a
+            jp p,.p1
+            neg
+.p1         ld l,a
+            ld h,0
+            ld d,h
+            ld e,l
+            add hl,hl
+            add hl,de
+            ld a,c
+            or a
+            jp p,.p2
+            neg
+.p2         ld e,a
+            ld d,0
+            or a
+            sbc hl,de
+            jr c,.v
+            ld a,b
+            rlca
+            and 1
+            ld (v_aim),a
             ret
-.shoot      ld a,V_BSPACE
-            ld (v_bt),a
-            ld hl,v_bn
-            dec (hl)
-            jr nz,mv_shoot
-            ld a,V_BDELAY
-            ld (v_bcd),a
+.v          ld a,c
+            rlca
+            and 1
+            add a,2
+            ld (v_aim),a
+            ret
 ; une balle depuis la tourelle, dans la direction v_aim (balle d'ennemi : classe de portee 5, infinie)
 mv_shoot:   ld a,(v_aim)
             ld e,a

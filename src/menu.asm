@@ -1048,7 +1048,7 @@ draw_act:   ld (a_src),hl
 txt_start:  db 'START GAME !',0
 txt_access: db 'ACCESS CODE',0
 txt_zone:   db 'ZONE 1',0
-txt_scroll: db '                    Papi Commando CPC !! A game by Studio Vetea - GFX, SFX, Design by Vetea - Music by Jon Something - Code by Vetea & Claude IA - Version 54 - @[ 2026 Studio Vetea                    ',0   ; @[ = le (c) en 2 caracteres
+txt_scroll: db '                    Papi Commando CPC !! A game by Studio Vetea - GFX, SFX, Design by Vetea - Music by Jon Something - Code by Vetea & Claude IA - Version 55 - @[ 2026 Studio Vetea                    ',0   ; @[ = le (c) en 2 caracteres
 
 fr_idx:     db 255,255,255,3,255,255,2,255,255,1,255,255,0       ; temps restant 0..12 -> image (255 : on ne redessine pas)
 ; positions (x en octets, y en lignes) des explosions de 12 x 24 : tout autour et sur les lettres du titre (lignes 30 a 56) ;

@@ -982,3 +982,9 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Flash blanc** : un vehicule touche (balle ou grenade, pas explosion de bidon ? si : tout degat) devient entierement blanc pendant 6 images (`mv_blitw` : pixels opaques = `WHITE`, sans image supplementaire) puis redevient normal (`mv_flash`).
 - **Bidons** : le marqueur blanc est maintenant `#17` (bit 4 en plus de `#07`) pour ne plus etre confondu avec les casernes (violet = `#07`) ; flammes = `#04`.
 - **Memoire banque 7** : 3 images d'explosion au lieu de 4 (une de moins : place), `VOICE_OFF` = #AA0.
+
+### v55 : WarTruck qui vise, ecrasement, vehicule prioritaire
+- **WarTruck** : il vise Papi dans les 4 directions (`mv_aim` : horizontal si 3 |dx| >= |dy|, sinon vertical ; 0 droite, 1 gauche, 2 bas, 3 haut) et tire **une balle par seconde** (`V_BDELAY` = 50 images). Plus de rafale de 3.
+- **Ecrasement** : tout ennemi vivant touche par le rectangle du vehicule meurt (`mv_crush`, `enemy_kill_now` : points comptes, quota Z80 compris).
+- **Priorite d'affichage** : le vehicule n'est plus recouvert (`mv_wake` n'est plus appele apres son dessin). Nouveau crochet de fin d'image (`ld a,5 / call veh_if` apres `crate_draw`) : `mv_late` repeint le camion (`mv_paint`, sans effacement) seulement si un ennemi ou une balle chevauche son rectangle. Les explosions de grenades ne sont pas testees (place).
+- **Banque 7** : `VOICE_OFF` = #B80 ; compresseur LZ ameliore (recherche plus profonde) : 8188 / 8192 octets.
