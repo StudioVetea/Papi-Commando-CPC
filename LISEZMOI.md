@@ -1073,3 +1073,7 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 
 ### v72 : plus aucune zone d'exclusion a la sortie des casernes
 - La v71 gardait une petite zone (8 x 16) autour de Papi ; elle est **supprimee** : un ennemi sort toujours de la caserne, meme si Papi est dessus (seul le test de terrain `can_stand_e` reste).
+
+### v73 : les bidons explosifs sont des abris
+- Un ennemi peut maintenant se mettre **a couvert derriere un bidon** (case #17) comme derriere un mur rouge : `cover_seek` et le test de couverture de `enemy_think` acceptent la case #16 (bits 1, 2 et 4) en plus du mur (2) ; une caserne (bit 2 seul) reste exclue. Il tire a travers son bidon comme a travers un mur ; si le bidon explose, l'abri disparait (aux risques et perils du tireur).
+- Fluidite : 50,1 fps (bot, 2 graines).

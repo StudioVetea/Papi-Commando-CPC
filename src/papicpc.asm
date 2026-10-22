@@ -1967,9 +1967,12 @@ cover_seek:
             jr nc,.nc2
             inc h
 .nc2        ld a,(hl)                   ; mur rouge juste dessous (pas une caserne : bit 2) ?
-            and 6
+            and #16                     ; v73 : un bidon (#17) est un abri aussi (comme le mur rouge)
             cp 2
+            jr z,.okc
+            cp #16
             jr nz,.no
+.okc
             pop hl
             ld a,(de)
             ret
@@ -2857,9 +2860,12 @@ enemy_think:
             ld c,a
             call cell_ptr
             ld a,(hl)
-            and 6                       ; (une caserne - bit 2 - n'est pas un abri)
+            and #16                     ; (une caserne - bit 2 - n'est pas un abri ; un bidon, #17, en est un : v73)
             cp 2
+            jr z,.cv2
+            cp #16
             jr nz,.seek
+.cv2
             ld a,(ix+E_Y)               ; ...et debout sur une case verte uniquement (ni jaune, ni bleue)
             add a,10
             ld c,a
