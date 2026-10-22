@@ -1070,3 +1070,6 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Apparition des ennemis** : un ennemi n'etait pas lache si Papi etait a moins de 14 x 40 pixels de la sortie (ca obligeait a camper devant sans que rien ne sorte, et favorisait l'immobilite). La zone d'exclusion est reduite a **8 x 16** : l'ennemi sort sauf si Papi est pile sur la sortie.
 - Fluidite : zone 1 mission 1, 49,3 fps (inchange).
 - **Depot GitHub** : plus de fichier `.dsk` ajoute sans accord de Vetea (seuls les sources y vont).
+
+### v72 : plus aucune zone d'exclusion a la sortie des casernes
+- La v71 gardait une petite zone (8 x 16) autour de Papi ; elle est **supprimee** : un ennemi sort toujours de la caserne, meme si Papi est dessus (seul le test de terrain `can_stand_e` reste).

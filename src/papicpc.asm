@@ -2037,18 +2037,7 @@ enemy_absent2:
             ld b,(hl)
             inc hl
             ld c,(hl)
-            ld a,(p_x)                  ; pas trop pres de Papi
-            sub b
-            jr nc,.p1
-            neg
-.p1         cp 8                        ; v71 : seulement si Papi est PILE sur la sortie (avant 14 x 40 : camper devant une caserne bloquait ses sorties)
-            jr nc,.far
-            ld a,(p_y)
-            sub c
-            jr nc,.p2
-            neg
-.p2         cp 16
-            jp c,enemy_next
+            ; v72 : plus de zone d'exclusion autour de Papi (l'ennemi sort toujours)
 .far        call can_stand_e
             jp nz,enemy_next
             call enemy_place
