@@ -96,7 +96,7 @@ intro_title2:
  db 5,40,#CF,"THE LOST BARRACKS",0
  db 0
 intro_title3:
- db 19,40,#CF,"TWIN ROADS",0
+ db 13,40,#CF,"THE LOST ROAD",0
  db 0
 NZG equ 4
 zone_start: db 5,10,15,255
@@ -125,7 +125,7 @@ intro_end2:
 intro_end3:
  db 3,56,#CF,"CONGRATULATIONS !!",0
  db 17,92,#F3,"YOU CLEARED",0
- db 15,112,#F3,"TWIN ROADS !",0
+ db 9,112,#F3,"THE LOST ROAD !",0
  db 0
 intro_missions:  ; mission : (nom de la zone, liste d images)
  dw intro_title1,intro_it0

@@ -241,7 +241,7 @@ ZINFO = {1: dict(title='OUTPOST C-01', tmx='ZoneTest.tmx', tileset='TileSet1.png
          3: dict(title='HIDDEN HEADQUARTER', tmx='Zone3.tmx', tileset=['TileSet1.png', 'TileSet2.png'], obstacle=['TileSet1Obstacle.png', 'TileSet2Obstacles.png'],
                  spawn='auto', first=1, water='Eau_3frames_12x8.png'),
          # zone 4 : 1 tileset (numeros de tuile 117-156 dans le TMX), eau, bidons explosifs (carre blanc) et routes (carre noir) ; les ennemis viennent des vehicules (veh)
-         4: dict(title='TWIN ROADS', tmx='Zone4.tmx', tileset='TileSet4.png', obstacle='TileSet4Obstacles.png', spawn='auto', first=1, water='Eau_3frames_12x8.png',
+         4: dict(title='THE LOST ROAD', tmx='Zone4.tmx', tileset='TileSet4.png', obstacle='TileSet4Obstacles.png', spawn='auto', first=1, water='Eau_3frames_12x8.png',
                  gid0=117, flame='Flamme_3frames_12x8_Z4.png')}
 def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None):
     zi = ZINFO[zn]
@@ -687,7 +687,7 @@ def build_menu():
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
 VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0xC40                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
+VOICE_OFF = 0xC80                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
 def build_voice():
     """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
     PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
@@ -725,7 +725,7 @@ def build_voice():
 os.makedirs(os.path.join(ROOT, 'build'), exist_ok=True)
 VOICE_LEN = build_voice()
 TRUCK_OFF = VOICE_OFF + VOICE_LEN   # images des camions : apres la voix (banque 7)
-BOSS_N = 16                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
+BOSS_N = 17                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
 BOSS_PAD = 0x4000 - BOSS_N * 512                      # elle est lue en BOSS_LOAD + BOSS_PAD (derniers 8 Ko de la fenetre) puis decompressee sur place
 
 def build_trucks():
@@ -746,9 +746,9 @@ def build_trucks():
                 opp = {0: 1, 1: 0, 2: 2, 3: 3}[aim]
                 out += img(mirror(w), 18 * frame[opp])
     assert len(out) == 10 * 396
-    ex = load_expl()                       # 4 images d'explosion 12 x 12, memes octets que celles du moteur mais SANS l'ordre en zigzag (le module des vehicules les affiche ligne par ligne)
-    for fr in (0, 2): out += masked(ex, fr * 12, 0, 12, 12)
-    assert len(out) == 10 * 396 + 2 * 144
+    ex = load('Explosion10x10.png')        # 4 images d'explosion 10 x 10 (2 gardees : 0 et 2), memes octets que celles du moteur mais SANS l'ordre en zigzag (le module des vehicules les affiche ligne par ligne)
+    for fr in (0, 2): out += masked(ex, fr * 10, 0, 10, 10)
+    assert len(out) == 10 * 396 + 2 * 100
     open(os.path.join(BUILD, 'trucks.bin'), 'wb').write(bytes(out))
 
 def build_hof(title_rows):

@@ -30,13 +30,13 @@ HOF_TRK      equ 38
 HOF_N        equ 10
 HOF_LOAD     equ #4000
 BOSS_TRK     equ 40
-BOSS_N       equ 16
+BOSS_N       equ 17
 BOSS_LOAD    equ #4000
 VOICE_FR     equ 119
-VOICE_OFF    equ #C40
+VOICE_OFF    equ #C80
 VOICE_LEN    equ 7168
-TRUCK_OFF    equ #2840
-BOSS_PAD     equ #2000
+TRUCK_OFF    equ #2880
+BOSS_PAD     equ #1E00
 XSLOT_BASE   equ #2C10
 NXS          equ 7
 Z_ICON       equ 128

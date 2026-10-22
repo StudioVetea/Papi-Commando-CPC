@@ -1052,3 +1052,11 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 ### v68 : PRESENTS sous "ONEBROU CORP." et nouveau minutage
 - Le mot **PRESENTS** est maintenant sous "ONEBROU CORP." (`PRES_Y` = 143).
 - Minutage : logo seul 1 s, puis PRESENTS + jingle ZONE CLEAR, puis 4 s plus tard la cover, la voix et le menu (constantes 50 et 200 images dans `boot`, `src/papicpc.asm`).
+
+### v69 : zone 4 « THE LOST ROAD », explosions de bidons en chaine
+- La zone 4 s'appelle maintenant **THE LOST ROAD** (ecrans de mission et de fin de zone).
+- **Chaine d'explosions** : quand un bidon explose, 6 petites explosions (images 10 x 10) s'enchainent tres vite autour de l'explosion centrale (a droite, a gauche, au-dessus, en dessous, puis les diagonales, une toutes les images). Elles n'ont pas d'effet sur les degats ; 8 explosions simultanees au maximum (`NFX`), celles qui sortiraient de l'ecran sont ignorees (`mv_chain`, table `mv_ctab` : decalage x en octets, y en lignes, retard en images).
+- Images d'explosion des vehicules en **10 x 10 natif** (100 octets au lieu de 144 par image).
+- **BUG CORRIGE : le souffle d'un bidon visait de travers.** Le centre de l'explosion etait range avec x et y inverses (`ld (mx_c),bc`) : les ennemis, Papi et le camion n'etaient testes que sur un point mal place. Le souffle (5 points de degat) touche maintenant vraiment ce qui est autour du bidon.
+- **Banque 7** : 17 secteurs sur la disquette (au lieu de 16), 8232 octets compresses ; `VOICE_OFF` = #C80.
+- **Mesures** (bot, 1000 images) : M1 graine 2 : 49,3 fps (max 26 ms), graine 3 : 47,2 ; M4 graine 2 : 49,0 (max 28 ms), graine 3 : 46,5 (max 33 ms) ; pas de blocage sur 1200 x 100 images.

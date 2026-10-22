@@ -925,9 +925,11 @@ mv_die1:    ld b,50
             ld (v_act),a
             call mv_spots
             push de
+            ld e,9
             call mv_fxadd
             pop de
             ld b,d
+            ld e,9
             call mv_fxadd
             ld a,V_HP
             ld (v_hpt),a
@@ -939,27 +941,59 @@ mv_die1:    ld b,50
 ;------------------------------------------------------------------------------
 ; explosions (3 emplacements : x, y, temps restant 0..17) : 4 images de 4 images d'affichage
 ;------------------------------------------------------------------------------
-mv_fxadd:   ld hl,v_fxs+2               ; B = x, C = y
-            ld de,3
-            ld a,3
+NFX         equ 8
+mv_fxadd:   ld hl,v_fxs+2               ; B = x, C = y, E = minuterie (9 = tout de suite, +1 par image de retard)
+            ld a,NFX
 .f          ex af,af'
             ld a,(hl)
             or a
             jr z,.free
-            add hl,de
+            inc hl
+            inc hl
+            inc hl
             ex af,af'
             dec a
             jr nz,.f
             ret
-.free       ld (hl),9
+.free       ld (hl),e
             dec hl
             ld (hl),c
             dec hl
             ld (hl),b
             ret
 
+; explosions en chaine autour du bidon : decalage x (octets), decalage y (lignes), retard (images)
+mv_chain:   ld hl,mv_ctab
+            ld d,6
+.c          ld a,(mx_c)
+            add a,(hl)
+            inc hl
+            ld b,a
+            cp 73
+            jr nc,.skip                 ; hors de l'ecran (ou retour a zero) : pas d'explosion
+            ld a,(my_c)
+            add a,(hl)
+            inc hl
+            ld c,a
+            cp 176
+            jr nc,.skip2
+            ld a,(hl)
+            add a,9
+            ld e,a
+            push hl
+            call mv_fxadd
+            pop hl
+.skip2      inc hl
+            jr .nx
+.skip       inc hl
+            inc hl
+.nx         dec d
+            jr nz,.c
+            ret
+mv_ctab:    db 6,0,2, -6,0,3, 0,-10,4, 0,10,5, 5,-8,6, -5,8,7
+
 mv_fx:      ld ix,v_fxs
-            ld b,3
+            ld b,NFX
 .l          ld a,(ix+2)
             or a
             jr z,.n
@@ -969,14 +1003,16 @@ mv_fx:      ld ix,v_fxs
             jr z,.end
             and 3
             jr nz,.pop
-            ld a,(ix+2)                 ; image : 4 - t / 4  (t = 16, 12, 8, 4)
+            ld a,(ix+2)                 ; image : 2 - t / 4  (t = 8, 4) ; t > 8 : explosion en retard, rien encore
+            cp 9
+            jr nc,.pop
             srl a
             srl a
             ld c,a
             ld a,2
             sub c
             ld hl,EXPL_DATA
-            ld de,144
+            ld de,100
             or a
             jr z,.p
             ld b,a
@@ -988,13 +1024,14 @@ mv_fx:      ld ix,v_fxs
             ld de,#060C
             call b1_restore
             pop de                      ; DE = image
-            ld a,6
+            ld a,5                      ; image de 10 x 10 pixels : 5 octets, 10 lignes
             ld (bl_n),a
-            ld a,12
+            ld a,10
             ld (bl_s),a
             ld (bl_h),a
             ld b,(ix+0)
             ld c,(ix+1)
+            inc c
             call mv_blit
             jr .pop
 .end        ld b,(ix+0)                 ; fin : le decor revient, les ennemis dessous se redessinent
@@ -1151,8 +1188,10 @@ mv_explode: ld (iy+3),2
             ld a,c
             add a,2
             ld c,a
-            ld (mx_c),bc                ; (mx_c = x, my_c = y) : centre du souffle
+            ld (my_c),bc                ; centre du souffle : my_c = y (C), mx_c = x (B) juste apres (voir la declaration)
+            ld e,9
             call mv_fxadd
+            call mv_chain               ; ... et la chaine d'explosions autour
             ld a,6
             call sfx
             ld ix,enemies
@@ -1364,9 +1403,9 @@ nw_hi       ds 1
 bl_n        ds 1
 bl_s        ds 1
 bl_h        ds 1
+my_c        ds 1                ; (dans cet ordre : ld (my_c),bc range C en my_c et B en mx_c)
 mx_c        ds 1
-my_c        ds 1
-v_fxs       ds 9
+v_fxs       ds 3*NFX
 v_bar       ds NBAR*BARSZ
 sb_x        ds 1
 sb_y        ds 1
