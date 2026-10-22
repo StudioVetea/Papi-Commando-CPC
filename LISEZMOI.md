@@ -1060,3 +1060,8 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **BUG CORRIGE : le souffle d'un bidon visait de travers.** Le centre de l'explosion etait range avec x et y inverses (`ld (mx_c),bc`) : les ennemis, Papi et le camion n'etaient testes que sur un point mal place. Le souffle (5 points de degat) touche maintenant vraiment ce qui est autour du bidon.
 - **Banque 7** : 17 secteurs sur la disquette (au lieu de 16), 8232 octets compresses ; `VOICE_OFF` = #C80.
 - **Mesures** (bot, 1000 images) : M1 graine 2 : 49,3 fps (max 26 ms), graine 3 : 47,2 ; M4 graine 2 : 49,0 (max 28 ms), graine 3 : 46,5 (max 33 ms) ; pas de blocage sur 1200 x 100 images.
+
+### v70 : nouvelle cover, mauvais code d'acces = retour au menu
+- **Cover** : `assets/CoverMode0.png` remplacee par la nouvelle image (4564 octets compresses, 9 secteurs).
+- **ACCESS CODE** : un mauvais code affiche « WRONG CODE ! » (avec le son), puis le jeu revient au **menu principal** (avant : l'ecran de saisie se vidait et on recommencait). Un bon code ne change pas.
+- Zone 4 inchangee.

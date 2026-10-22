@@ -1,6 +1,6 @@
 ; --- genere par tools/convert.py ---
 cover_pal:  ; 16 encres + bordure (numeros materiels)
- db #54,#5C,#4B,#43,#40,#4C,#4E,#47,#52,#56,#5F,#4A,#46,#57,#55,#5E
+ db #54,#5C,#4B,#43,#40,#4C,#4E,#47,#56,#52,#5E,#54,#54,#54,#54,#54
  db #54
 logo_pal:   ; logo du studio (affiche avant la cover)
  db #54,#56,#52,#4B,#5F,#4C,#4A,#46,#55,#57,#4E,#40,#54,#54,#54,#54

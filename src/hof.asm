@@ -826,12 +826,9 @@ hof_entry:  ld a,(HOF_MODE)
             ld a,(HOF_MODE)
             cp 2
             jr nz,.nm2
-            call code_check             ; code d'acces : bon (NZ : fanfare puis menu) ou mauvais (on recommence)
+            call code_check             ; code d'acces : bon (NZ : fanfare puis menu) ou mauvais (message WRONG CODE, puis retour au menu principal)
             jr nz,.end
-            xor a
-            ld (hv_done),a
-            ld (hv_len),a
-            jp .loop
+            ret
 .nm2            ; --- fin : un nom vide devient PAPI ; fanfare, puis retour au menu ---
             ld a,(hv_len)
             or a

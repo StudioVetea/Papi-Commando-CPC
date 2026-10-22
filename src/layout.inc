@@ -1,9 +1,9 @@
 ; --- genere par tools/convert.py : disposition de la disquette et de la zone de preparation ---
 COVER_TRK    equ 10
 COVER_SEC    equ 0
-COVER_N      equ 10
+COVER_N      equ 9
 COVER_LOAD   equ #5000
-LOGO_TRK     equ 12
+LOGO_TRK     equ 11
 LOGO_N       equ 5
 NZONES       equ 19
 ZSTAGE       equ #4800
@@ -17,19 +17,19 @@ TILE_BASE    equ #9510
 ZSPR_DST     equ #95A0
 ZSPR_C       equ 3
 WHITE        equ #F3
-MENU_TRK     equ 32
+MENU_TRK     equ 31
 MENU_N       equ 18
 MENU_LOAD    equ #5000
-INTRO_TRK    equ 34
+INTRO_TRK    equ 33
 INTRO_N      equ 22
 INTRO_LOAD   equ #4000
-GO_TRK       equ 37
+GO_TRK       equ 36
 GO_N         equ 4
 GO_LOAD      equ #5400
-HOF_TRK      equ 38
+HOF_TRK      equ 37
 HOF_N        equ 10
 HOF_LOAD     equ #4000
-BOSS_TRK     equ 40
+BOSS_TRK     equ 39
 BOSS_N       equ 17
 BOSS_LOAD    equ #4000
 VOICE_FR     equ 119
