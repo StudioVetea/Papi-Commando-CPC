@@ -2041,13 +2041,13 @@ enemy_absent2:
             sub b
             jr nc,.p1
             neg
-.p1         cp 14
+.p1         cp 8                        ; v71 : seulement si Papi est PILE sur la sortie (avant 14 x 40 : camper devant une caserne bloquait ses sorties)
             jr nc,.far
             ld a,(p_y)
             sub c
             jr nc,.p2
             neg
-.p2         cp 40
+.p2         cp 16
             jp c,enemy_next
 .far        call can_stand_e
             jp nz,enemy_next

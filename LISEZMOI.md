@@ -1065,3 +1065,8 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - **Cover** : `assets/CoverMode0.png` remplacee par la nouvelle image (4564 octets compresses, 9 secteurs).
 - **ACCESS CODE** : un mauvais code affiche « WRONG CODE ! » (avec le son), puis le jeu revient au **menu principal** (avant : l'ecran de saisie se vidait et on recommencait). Un bon code ne change pas.
 - Zone 4 inchangee.
+
+### v71 : les casernes ne se bloquent plus quand Papi est a cote
+- **Apparition des ennemis** : un ennemi n'etait pas lache si Papi etait a moins de 14 x 40 pixels de la sortie (ca obligeait a camper devant sans que rien ne sorte, et favorisait l'immobilite). La zone d'exclusion est reduite a **8 x 16** : l'ennemi sort sauf si Papi est pile sur la sortie.
+- Fluidite : zone 1 mission 1, 49,3 fps (inchange).
+- **Depot GitHub** : plus de fichier `.dsk` ajoute sans accord de Vetea (seuls les sources y vont).
