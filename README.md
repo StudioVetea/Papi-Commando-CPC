@@ -36,3 +36,8 @@ Prérequis : `rasm` dans le PATH, Python 3 (avec Pillow).
 - `LISEZMOI.md` : notes techniques détaillées, version par version
 
 Studio Vetea.
+
+## Prototype 2 (scrolling vertical + ennemis)
+Sources dans `proto/` (`g2_head.asm`, `g2_game_a.asm`, `g2_game_b.asm`, `build_g2.py`, `gen_data.py`).
+Construire : `python3 proto/build_g2.py` (donne `GAME2.BIN` / `game2.dsk`, lancer avec `RUN"GAME2"`).
+Scroll CRTC 50 Hz, 8 soldats, tirs, collisions décor/balles ; 0 image ratée mesurée sur émulateur (4 parcours aléatoires x 250 images).

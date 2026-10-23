@@ -57,3 +57,32 @@ with open(os.path.join(ROOT, 'proto', 'data.inc'), 'w') as f:
         for j in range(4):
             cv.db(f, cv.masked(papi, j * 12, ROWS[d] * 12, 12, 12), 12)
 print('data.inc ok :', MAPH, 'rangees')
+# ---- collision : tuile pleine ? (obstacles rouge/violet = bit 1 des types du jeu) ----
+from PIL import Image
+KIND = {(0, 128, 0): 0x00, (255, 0, 0): 0x03, (0, 128, 255): 0x01, (255, 255, 0): 0x80, (128, 0, 255): 0x07, (255, 0, 210): 0x08, (255, 255, 255): 0x17}
+tsolid = []
+for ts, ob in (('TileSet1.png', 'TileSet1Obstacle.png'), ('TileSet4.png', 'TileSet4Obstacles.png')):
+    a = Image.open(A + ts).convert('RGB'); b = Image.open(A + ob).convert('RGB')
+    for t in range(40):
+        tx, ty = (t % 4) * 12, (t // 4) * 8
+        k = 0
+        for y in range(8):
+            for x in range(12):
+                pb = b.getpixel((tx + x, ty + y))
+                if pb != a.getpixel((tx + x, ty + y)) and pb in KIND: k = KIND[pb]
+        tsolid.append(1 if (k & 2) or (k & 8) else 0)
+sold = cv.load('SoldatC++_12x12.png')
+bal = cv.load('Balle2x6.png')
+with open(os.path.join(ROOT, 'proto', 'data2.inc'), 'w') as f:
+    f.write('tsolid:\n'); cv.db(f, tsolid, 40)
+    f.write('sold_tab:\n')
+    for d in order:
+        f.write(' dw ' + ','.join('sold_img+%d' % (144 * (4 * order.index(d) + j)) for j in range(4)) + '\n')
+    f.write('sold_img:\n')
+    for d in order:
+        for j in range(4):
+            cv.db(f, cv.masked(sold, j * 12, ROWS[d] * 12, 12, 12), 12)
+    f.write('bul_img:\n')
+    cv.db(f, cv.masked(bal, 0, 0, 2, 6), 12)
+print('data2.inc ok, tuiles pleines :', sum(tsolid))
+
