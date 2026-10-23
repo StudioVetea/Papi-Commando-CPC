@@ -37,11 +37,15 @@ static FILE* wav = 0; static long wav_n = 0; static int wav_on = 0;
 static unsigned watch_addr = 0x10000, watch_hits = 0; static uint8_t watch_val; static unsigned trap_pc = 0x10000, trap_n = 0;
 static int sodd_done = 1; static unsigned spmin = 0x200, spmin_pc = 0;
 static unsigned ring[8192], ring_i = 0, ring_last = 0x10000;
-static int crtclog = 0, scan_ln = 0; static unsigned pv = 0, pr = 0, ph = 0; static long ticks_total = 0;
+static unsigned brkpc = 0xFFFFF, bmA[8], bmL[8]; static int nbm = 0;
+static int crtclog = 0, scan_ln = 0; static unsigned lnpc[8]; static int nlnpc = 0; static unsigned pv = 0, pr = 0, ph = 0; static long ticks_total = 0;
 static void dbg(void* ud, uint64_t pins) {
     (void)ud;
+    { static unsigned lb = 0; if (sys.cpu.pc == brkpc && lb != brkpc) { printf("BRK line %d:", scan_ln); for (int q = 0; q < nbm; q++) { printf(" [%04X]", bmA[q]); for (unsigned k = 0; k < bmL[q]; k++) printf(" %02X", mem_rd(&sys.mem, bmA[q] + k)); } printf("\n"); } lb = sys.cpu.pc; }
     if (crtclog) {
         ticks_total++;
+        { static unsigned ring[64], ri = 0, lastq = 0xFFFF; unsigned pc_ = sys.cpu.pc; if (pc_ != lastq) { ring[ri++ & 63] = pc_; lastq = pc_; } if (pc_ == 0x66 && ring[(ri-2)&63] != 0x66) { printf("TRACE:"); for (int q = 0; q < 40; q++) printf(" %04X", ring[(ri - 40 + q) & 63]); printf("\n IX=%04X IY=%04X DE=%04X HL=%04X SP=%04X mem8F8:", sys.cpu.ix, sys.cpu.iy, sys.cpu.de, sys.cpu.hl, sys.cpu.sp); for (int q=0;q<12;q++) printf(" %02X", mem_rd(&sys.mem, 0x8F8+q)); printf("\n"); } }
+        { static unsigned lastp = 0; for (int q = 0; q < nlnpc; q++) if (sys.cpu.pc == lnpc[q] && lastp != lnpc[q]) printf("PC %04X at line %d IX=%04X IY=%04X DE=%04X HL=%04X SP=%04X\n", lnpc[q], scan_ln, sys.cpu.ix, sys.cpu.iy, sys.cpu.de, sys.cpu.hl, sys.cpu.sp); lastp = sys.cpu.pc; }
         unsigned h = sys.crtc.h_ctr, v = sys.crtc.v_ctr, r = sys.crtc.r_ctr;
         if (h < ph) scan_ln++;
         if (v == 0 && r == 0 && (pv != 0 || pr != 0)) scan_ln = 0;
@@ -61,7 +65,7 @@ static void dbg(void* ud, uint64_t pins) {
     { if (!sodd_done && sys.cpu.iff1 && (sys.cpu.sp & 1)) { sodd_done = 1; printf("SP impair PC=%04X SP=%04X IX=%04X IY=%04X BC=%04X DE=%04X HL=%04X historique :", sys.cpu.pc, sys.cpu.sp, sys.cpu.ix, sys.cpu.iy, sys.cpu.bc, sys.cpu.de, sys.cpu.hl); for (int k = 0; k < 60; k++) printf(" %04X", ring[(ring_i + 8192 - 60 + k) & 8191]); printf("\n"); } }
     if (watch_addr < 0x10000) {
         uint8_t v = mem_rd(&sys.mem, watch_addr);
-        if (v != watch_val) { if (watch_hits++ < 100000) { printf("watch %04X : %02X -> %02X, PC suivant = %04X (SP=%04X) IX=%04X BC=%04X DE=%04X HL=%04X pile :", watch_addr, watch_val, v, sys.cpu.pc, sys.cpu.sp, sys.cpu.ix, sys.cpu.bc, sys.cpu.de, sys.cpu.hl); for (int k = 0; k < 8; k++) printf(" %04X", mem_rd(&sys.mem, sys.cpu.sp + 2 * k) | (mem_rd(&sys.mem, sys.cpu.sp + 2 * k + 1) << 8)); printf("\n"); const char* wd = getenv("WATCH_DUMP"); if (wd) { unsigned da = strtol(wd, 0, 16); printf("  mem@%04X :", da); for (int k = 0; k < 192; k++) printf(" %02X", mem_rd(&sys.mem, da + k)); printf("\n"); } } watch_val = v; }
+        if (v != watch_val) { if (watch_hits++ < 100000) { printf("watch line %d %04X : %02X -> %02X, PC suivant = %04X (SP=%04X) IX=%04X BC=%04X DE=%04X HL=%04X pile :", scan_ln, watch_addr, watch_val, v, sys.cpu.pc, sys.cpu.sp, sys.cpu.ix, sys.cpu.bc, sys.cpu.de, sys.cpu.hl); for (int k = 0; k < 8; k++) printf(" %04X", mem_rd(&sys.mem, sys.cpu.sp + 2 * k) | (mem_rd(&sys.mem, sys.cpu.sp + 2 * k + 1) << 8)); printf("\n"); const char* wd = getenv("WATCH_DUMP"); if (wd) { unsigned da = strtol(wd, 0, 16); printf("  mem@%04X :", da); for (int k = 0; k < 192; k++) printf(" %02X", mem_rd(&sys.mem, da + k)); printf("\n"); } } watch_val = v; }
     }
     if (!prof_on) return;
     total_ticks++;
@@ -132,6 +136,9 @@ int main(int argc, char** argv) {
         else if (!strncmp(c, "shot:", 5)) shot(v);
         else if (!strncmp(c, "vshot:", 6)) { int g = 0; bool prev = sys.crtc.vs; while (g++ < 5000) { cpc_exec(&sys, 32); if (sys.crtc.vs && !prev) break; prev = sys.crtc.vs; } shot(v); }
         else if (!strncmp(c, "vbl:", 4)) { int g = 0; bool prev = sys.crtc.vs; while (g++ < 5000) { cpc_exec(&sys, 32); if (sys.crtc.vs && !prev) break; prev = sys.crtc.vs; } }
+        else if (!strncmp(c, "brk:", 4)) brkpc = strtol(v, 0, 16);
+        else if (!strncmp(c, "bm:", 3)) { bmA[nbm] = strtol(v, 0, 16); char* q2 = strchr(v, ':'); bmL[nbm++] = q2 ? atoi(q2 + 1) : 16; }
+        else if (!strncmp(c, "lnpc:", 5)) { lnpc[nlnpc++] = strtol(v, 0, 16); }
         else if (!strncmp(c, "crtclog:", 8)) crtclog = atoi(v);
         else if (!strncmp(c, "bot:", 4)) { bot = atoi(v); if (!bot) cpc_joystick(&sys, 0); }
         else if (!strncmp(c, "seed:", 5)) bot_seed = atoi(v);

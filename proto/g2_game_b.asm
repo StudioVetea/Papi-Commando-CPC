@@ -114,7 +114,9 @@ spr_job:
         pop bc
         or a
         jr z,.nx
+        push bc
         call spr_process
+        pop bc
         or a
         jr nz,.top
         jr .nx

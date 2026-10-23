@@ -86,3 +86,25 @@ with open(os.path.join(ROOT, 'proto', 'data2.inc'), 'w') as f:
     cv.db(f, cv.masked(bal, 0, 0, 2, 6), 12)
 print('data2.inc ok, tuiles pleines :', sum(tsolid))
 
+
+# ---- HUD (bandeau 8 lignes x 78 octets, modele pris sur le vrai jeu) + chiffres 3x5 ----
+import re as _re
+_gfx = open(os.path.join(ROOT, 'src', 'gfx.asm')).read()
+_f = _gfx[_gfx.index('\nfont:'):]
+_bytes = [int(x, 16) for x in _re.findall(r'#([0-9A-Fa-f]{2})', '\n'.join(l for l in _f.split('\n')[1:12 + 1] if l.strip().startswith('db'))[:400])]
+_glyph = []
+for g in range(11):                                   # 0..9 + espace
+    v = (_bytes[2 * g + 1] << 8) | _bytes[2 * g]
+    out = []
+    for r in range(5):
+        bits = (v >> (13 - 3 * r)) & 7
+        b0 = (0xA2 if bits & 4 else 0) | (0x51 if bits & 2 else 0)
+        b1 = 0xA2 if bits & 1 else 0
+        out += [b0, b1]
+    _glyph.append(out)
+_tpl = open(os.path.join(ROOT, 'proto', 'hud_tpl.bin'), 'rb').read()
+with open(os.path.join(ROOT, 'proto', 'data3.inc'), 'w') as f:
+    f.write('hud_tpl:\n'); cv.db(f, list(_tpl), 78)
+    f.write('hud_font:\n')
+    for g in _glyph: cv.db(f, g, 10)
+print('data3.inc ok')
