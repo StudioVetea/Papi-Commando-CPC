@@ -63,7 +63,7 @@ lz_off      equ #31E1
 slot_flash  equ #3054          ; clignotement blanc restant (images) de chaque place : 12 octets
 white_buf   equ #3770          ; image blanche de l'ennemi qui clignote (144 octets, zone libre #3000-#31FF)
 FLASH_N     equ 10             ; duree du clignotement blanc apres un tir qui ne tue pas (images)
-GREN_MAX    equ 10             ; grenades au plus
+GREN_MAX    equ 25             ; grenades au plus
 GREN_START  equ 5              ; grenades au debut d'une zone (a regler)
 CRATE_GREN  equ 5              ; grenades d'une caisse
 ZC_LEN      equ 64             ; images du jingle ZONE CLEAR
@@ -129,6 +129,9 @@ B_DY        equ 6
 B_PASS      equ 9               ; pas restants pendant lesquels la balle traverse les murs rouges (tireur colle a son obstacle)
 B_AGE       equ 8               ; nombre de pas faits (balles ennemies : une balle toute jeune n'est jamais cachee) ; eclat (etat 3) : image 0..6
 B_RNG       equ 10              ; portee : nombre de pas au bout desquels la balle eclate (voir rng_tab)
+og_gr       equ #30FB           ; officers_update : 1 = la place examinee est un grenadier (octets libres apres la table des balles)
+eg_rx       equ #30FC           ; portee en x de la grenade ennemie qui part (octets)
+eg_ry       equ #30FD           ; portee en y (lignes)
 shot_cls    equ #30FA           ; classe de portee du tireur de la balle qui part (0 Papi, 1 soldat, 2 officier, 3 general, 4 boss, 5 vehicule)
 PBUL_SPEED  equ 179             ; balles de Papi : 179/256 = 70 % des images (100 % avant), pas inchange
 PSPEED_X    equ 90              ; Papi : cumul horizontal 90/256 = 0,35 octet par image (17,5 octets/s ; 25 avant)
@@ -1987,7 +1990,7 @@ seek_tab:   db 2,2, 1,1, 3,0, 0,1, 4,0
             db 34,2, 33,1, 35,0, 32,1, 36,0
 
 ; donnees (pas de code ici : le code qui precede ne doit jamais "tomber" dedans)
-type_ptr:   dw soldat_frames,officer_frames,general_frames,general_frames,boss_frames       ; types 4 (corps du boss) et 5 (tete) : la table des generals sert au corps
+type_ptr:   dw soldat_frames,officer_frames,general_frames,general_frames,boss_frames,boss_frames       ; types 4 (corps du boss) et 5 (tete) : la table des generals sert au corps
             include 'zones.inc'         ; repertoire des zones (genere)
 DT_FX       equ 0
 DT_XI       equ 1
@@ -2755,7 +2758,11 @@ enemy_kill_now:
             call z,z80_drop             ; mission Z80 : quota atteint -> il tombe de cet ennemi (sinon : victoire par la boucle principale)
             ld hl,hud_dirty
             set 2,(hl)
-.nk         ld hl,slot_pts              ; points : 10 x la valeur de son type (DE = place)
+.nk         call gr_test                ; grenadier : 25 % de chance de laisser une caisse de grenades (banque 7)
+            jr nz,.nodrop
+            ld a,3
+            call gr_call
+.nodrop     ld hl,slot_pts              ; points : 10 x la valeur de son type (DE = place)
             add hl,de
             ld b,(hl)
 .pt         push bc
@@ -2825,6 +2832,8 @@ enemy_think:
             ld (ix+E_TIMER),16
             xor a
             ld (cov_now),a
+            call gr_test                ; grenadier : son propre comportement (banque 7)
+            jp z,gr_think
             ld hl,slot_gren             ; place a couvert (25 % des unites) ?  (bit 1 de la fiche)
             ld a,(en_cur)
             add a,l
@@ -2986,7 +2995,9 @@ enemy_try_fire:
             ld a,(cov_now)              ; le corps du boss ne tire pas ici (voir boss_tick) : il retient seulement s'il est a couvert
             ld (b_cov),a
             ret
-.n          call fire_ptr               ; HL = FIRE_LAST de cette place, DE = son indice
+.n          call gr_test                ; le grenadier ne tire pas a la balle : il ne lance que des grenades
+            ret z
+            call fire_ptr               ; HL = FIRE_LAST de cette place, DE = son indice
             push hl
             ld hl,slot_fire
             add hl,de
@@ -3350,125 +3361,27 @@ arc_tab:    db 0,1,2,4,5,6,7,8,9,10,10,11,11,12,12
             db 12,12,12,11,11,10,10,9,8,7,6,5,4,2,1,0,0
 
 ;------------------------------------------------------------------------------
-; OFFICIERS : un lancer de grenade toutes les 8 a 13 secondes chacun.
-;   Les officiers sont les derniers de la liste (off_from) : 1, 1, 2, 2, 3, 3 pour 2..12 ennemis.
-;   officers_update est appelee une image sur 4. Une minuterie par officier (off_tmr) compte en
-;   pas de 4 images : 100 a 163 pas = 400 a 652 images = 8 a 13 s. Zero = a retirer au hasard.
-;   Une seule grenade ennemie a la fois : si elle est occupee, nouvel essai 2 s plus tard.
+; OFFICIERS et GRENADIERS : un lancer de grenade toutes les 8 a 13 s chacun (officier) ou toutes les 2 s (grenadier).
+;   Le code (officers_update, egrenade_throw, reflexion et caisse du grenadier) est dans la banque 7 (boss_mod.asm : m_gr), appele par la rampe gr_call.
 ;------------------------------------------------------------------------------
 officers_update:
-            ld a,(nb_wanted)
-            add a,a
-            add a,a
-            add a,a
-            add a,a
-            ld c,a                      ; C = fin de la liste des fiches
-            xor a
-            ld ixl,a
-            ld ixh,hi(enemies)
-.next       ld a,ixl
-            cp c
-            ret nc
+            ld a,1
+            jp gr_call
+gr_think:   ld a,2                      ; reflexion du grenadier IX
+            jp gr_call
+; Z si la place de l'ennemi IX est un grenadier (classe 6 : bits 4-6 de sa fiche 'gren') ; A, HL detruits
+gr_test:    ld a,ixl
             rrca
             rrca
             rrca
             rrca
             and 15
-            ld e,a
-            ld d,0
-            ld hl,slot_gren             ; cette place lance-t-elle des grenades ? (bit 0)
-            add hl,de
+            add a,lo(slot_gren)
+            ld l,a
+            ld h,hi(slot_gren)
             ld a,(hl)
-            and 1
-            jr z,.step
-            ld hl,off_tmr
-            add hl,de                   ; HL = minuterie de cet officier
-            ld a,(ix+E_STATE)
-            dec a
-            jr z,.alive
-            ld (hl),0                   ; mort ou absent : on repart de zero
-            jr .step
-.alive      ld a,(hl)
-            or a
-            jr nz,.armed
-            push hl
-            call rand                   ; A = hasard
-            pop hl
-            and 63
-            add a,100
-            ld (hl),a
-            jr .step
-.armed      dec (hl)
-            jr nz,.step
-            ld a,(eg_state)             ; echeance : grenade libre et Papi en jeu ?
-            ld b,a
-            ld a,(p_state)
-            or b
-            jr z,.throw
-            ld (hl),25                  ; non : nouvel essai dans 100 images
-            jr .step
-.throw      push bc
-            call egrenade_throw
-            pop bc
-.step       ld a,ixl
-            add a,ESIZE
-            ld ixl,a
-            jr .next
-
-; lance la grenade de l'officier IX vers la position de Papi, a portee de grenade au plus (vol de 64 images)
-egrenade_throw:
-            ld a,(ix+E_X)
-            add a,2
-            ld b,a                      ; B = x de depart
-            ld a,(ix+E_Y)
-            add a,3
-            ld c,a                      ; C = y de depart
-            xor a
-            ld (eg_xf),a
-            ld (eg_yf),a
-            ld a,b
-            ld (eg_x),a
-            ld a,c
-            ld (eg_y),a
-            ld a,(p_x)
-            add a,2
-            sub b
-            ld e,EG_RANGEX
-            call .clamp                 ; elle ne va pas plus loin que celle de Papi
-            call .v4                    ; vitesse = ecart x 4 : 64 images x 4 / 256 = l'ecart
-            ld (eg_vx),hl
-            ld a,(p_y)
-            add a,3
-            sub c
-            ld e,EG_RANGEY
-            call .clamp
-            call .v4
-            ld (eg_vy),hl
-            xor a
-            ld (eg_t),a
-            dec a
-            ld (eg_ox),a                ; rien a effacer
-            ld a,1
-            ld (eg_state),a
-            ld a,7                      ; son du lancer
-            jp sfx
-.v4         ld l,a
-            add a,a
-            sbc a,a
-            ld h,a                      ; HL = A etendu au signe
-            add hl,hl
-            add hl,hl
-            ret
-.clamp      jr c,.cneg                  ; retenue du sub = ecart negatif (8 bits signes ne suffisent pas : 200 lignes)
-            cp e
-            ret c
-            ld a,e
-            ret
-.cneg       neg
-            cp e
-            jr c,.cok
-            ld a,e
-.cok        neg
+            and #70
+            cp #60
             ret
 
 ; grenade des officiers : vol, atterrissage, explosion qui touche Papi

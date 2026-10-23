@@ -42,6 +42,10 @@ hud_kills:  ld bc,#7F00+CFG_BOSS
 bk_back:    ld bc,#7F00+GAME_CFG
             out (c),c
             ret
+gr_call:    ld bc,#7F00+CFG_BOSS        ; officiers et grenadiers : A = fonction de gr_mod (banque 7) ; IX et IY conserves
+            out (c),c
+            call gr_mod
+            jr bk_back
 ; zone 4 (vehicules) : A = fonction (1 image du vehicule, 2 balle de Papi, 3 explosion de grenade, 4 bidon touche), IX et HL conserves ; le code est dans la banque 7 (m_veh)
 veh_if:     ld c,a                      ; comme veh_call, mais seulement dans une zone a vehicules
             ld a,(veh_on)

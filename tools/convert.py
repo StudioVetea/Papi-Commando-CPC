@@ -227,6 +227,9 @@ UNITS = {
     1: dict(name='soldat',   sheet='SoldatC++_12x12.png',  fire=240, hp=1, pts=1, spd=0,  gren=0, cls=1),
     2: dict(name='officier', sheet='OfficierC___12x12.png', fire=144, hp=2, pts=2, spd=0,  gren=1, cls=2),
     3: dict(name='general',  sheet='GeneralC___12x12.png', fire=80,  hp=3, pts=5, spd=32, gren=0, cls=3),
+    # GRENADIER (cahier des charges du grenadier C++) : 1 PV, 20 points, vitesse des soldats, ne lance que des grenades (toutes les 2 s, portee des officiers +20 %), garde ses distances,
+    #   ne se met pas a couvert ; planche de 4 directions (droite, gauche, bas, haut) + mort : 'rows' = ligne de la planche pour chacune des 9 lignes du moteur (4 : mort)
+    6: dict(name='grenadier', sheet='GrenadierC___12x12.png', fire=240, hp=1, pts=2, spd=0, gren=1, cls=6, rows=[0, 1, 2, 3, 0, 1, 0, 1, 4]),
     # BOSS (12 x 24) : deux places d'ennemi empilees. 4 = le corps (pieds : c'est lui qui reflechit, marche et tire), 5 = la tete,
     # collee au-dessus (12 lignes plus haut). La planche fait 12 x 24 par image ; les 4 images de mort sont des explosions.
     4: dict(name='boss_corps', sheet='BossCaporal_12x24.png', half=1, fire=96, hp=30, pts=20, spd=0, gren=0, cls=4),
@@ -250,7 +253,7 @@ def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, 
              art=list(art), units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'))
     if time: z['text'] = ['TIME ATTACK !', 'SURVIVE %d S.' % time]
     else:
-        noun = {(1,): 'SOLDIERS', (2,): 'OFFICERS', (3,): 'GENERALS'}.get(tuple(sorted(count)), 'ENEMIES')
+        noun = {(1,): 'SOLDIERS', (2,): 'OFFICERS', (3,): 'GENERALS', (6,): 'GRENADIERS'}.get(tuple(sorted(count)), 'ENEMIES')
         z['text'] = ['KILL %d %s.' % (kills, noun)]
     if text: z['text'] = text
     return z
@@ -332,6 +335,8 @@ ZONES = [
     # les images fixes passent devant ; show_units=False supprime les ennemis automatiques. Chaque image fait grossir l'overlay (INTRO_N automatique).
 
 ]
+if os.environ.get('PAPI_TEST_GREN'):           # essai : la mission 1 devient 'tuer 15 grenadiers' (RUN"PAPICPC", touche + du menu de test)
+    ZONES[0] = _m(1, 5, [(1, 40), (6, 60)], kills=15, count=(6,))
  
 for _i, _z in enumerate(ZONES): _z['name'] = 'zone%02d' % (_i + 1)       # noms de fichiers uniques (le numero de mission recommence a 1 a chaque zone)
 ZSTART = [min(i for i, z in enumerate(ZONES) if z['zn'] == k) for k in sorted(ZINFO)]          # premiere mission de chaque zone
@@ -551,7 +556,7 @@ def build_zone(z):
                 if fr >= 32: ptrs.append(EXPLO_PTRS[fr - 32]); continue          # mort : explosions (images deja residentes)
                 d = masked(g, (fr % 4) * 12, (fr // 4) * 24 + 12 * u['half'], 12, 12, True)
             else:
-                d = masked(g, (fr % 4) * 12, (fr // 4) * 12, 12, 12, True)
+                d = masked(g, (fr % 4) * 12, (u['rows'][fr // 4] if 'rows' in u else fr // 4) * 12, 12, 12, True)
             ptrs.append(intern(d))
         tables[t] = ptrs
     z80img = intern(masked(load('Z80_12x12.png'), 0, 0, 12, 12, True)) if z.get('z80') else 0      # mission Z80 : image du Z80 (objet ramasse)
@@ -594,7 +599,7 @@ def build_zone(z):
     # bit 2 de la fiche : cette place compte pour le quota (les types a abattre) ; Time Attack : aucune
     for s_ in range(12): hdr[16 + 12 * 5 + s_] |= 4 if (not z.get('time') and ext[s_] in z['count']) else 0
     # tir en couverture : une part des unites (officiers compris), reparties dans la liste ; bit 1 de la fiche 'gren'
-    cands = list(range(nb, units))
+    cands = [s_ for s_ in range(nb, units) if slot_types[s_] != 6]      # le grenadier ne se met pas a couvert
     ncov = (len(cands) * z.get('cover', 0) + 50) // 100
     cov = [cands[int((i + 0.5) * len(cands) / ncov)] for i in range(ncov)] if ncov and cands else []
     if boss: cov.append(0)                              # le boss sait tirer a couvert (comme le soldat)
@@ -608,7 +613,7 @@ def build_zone(z):
     assert len(zb) == Z_TKIND; zb += bytes(tkind[t] for t in used) + bytes(40 - len(used))
     assert len(zb) == Z_FRAMES
     if boss and any(t == 3 for t, _ in mix): assert all(t == 3 for t, _ in mix), 'boss + generaux : garde 100 % generaux'      # leurs images prennent la place de la table des soldats (la table des generals sert au corps du boss)
-    order = ((3 if any(t == 3 for t, _ in mix) else 1), 2, 4, 5, 0) if boss else (1, 2, 3, 0, 0)      # boss : son corps prend la place de la table des generals (le moteur ne les distingue pas) ; la tete suit
+    order = ((3 if any(t == 3 for t, _ in mix) else 1), 2, 4, 5, 0) if boss else (1, 2, 3, 6, 0)      # boss : son corps prend la place de la table des generals (le moteur ne les distingue pas) ; la tete suit
     for t in order:
         for p in tables.get(t, [0] * 36): zb += bytes([p & 255, p >> 8])
     assert len(zb) == Z_TILES
@@ -687,7 +692,7 @@ def build_menu():
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
 VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0xC80                      # la voix commence 3 Ko apres le debut de la banque 7 (code du boss et des vehicules)
+VOICE_OFF = 0x1100                     # la voix commence 4,3 Ko apres le debut de la banque 7 (code du boss, des vehicules, des officiers et des grenadiers)
 def build_voice():
     """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
     PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
@@ -854,7 +859,7 @@ def intro_items():
     global _ITEMS
     if _ITEMS: return _ITEMS
     blobs, per = [], []
-    unit_png = {1: 'SoldatC++_12x12.png', 2: 'OfficierC___12x12.png', 3: 'GeneralC___12x12.png'}
+    unit_png = {1: 'SoldatC++_12x12.png', 2: 'OfficierC___12x12.png', 3: 'GeneralC___12x12.png', 6: 'GrenadierC___12x12.png'}
     for t, nm in unit_png.items():
         d, w, h = _png_frames(nm, 12, 12, 4)
         blobs.append(('intro_unit%d' % t, d))

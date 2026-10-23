@@ -328,5 +328,263 @@ m_voice:    di
             ld bc,#F600
             out (c),c
             ret
+
+; ==== OFFICIERS et GRENADIERS (voir gr_call dans boss.asm) ====
+
+; mort du grenadier IX : 25 % de chance de laisser une caisse de grenades a l'endroit ou il tombe (une seule caisse en jeu a la fois)
+gr_drop:    ld a,(crate_st)
+            or a
+            ret nz
+            call rand
+            ld a,h
+            and 3
+            ret nz
+            ld a,(ix+E_X)
+            ld (crate_x),a
+            ld a,(ix+E_Y)
+            ld (crate_y),a
+            ld a,#FF
+            ld (crate_ox),a             ; rien a effacer
+            ld a,1
+            ld (crate_st),a             ; au sol
+            ret
+
+; A = 1 officers_update, 2 reflexion du grenadier IX, 3 mort du grenadier IX
+gr_mod:       dec a
+            jp z,m_officers_update
+            dec a
+            jp z,grenadier_think
+            jr gr_drop
+
+;------------------------------------------------------------------------------
+; OFFICIERS : un lancer de grenade toutes les 8 a 13 secondes chacun.
+;   Les officiers sont les derniers de la liste (off_from) : 1, 1, 2, 2, 3, 3 pour 2..12 ennemis.
+;   officers_update est appelee une image sur 4. Une minuterie par officier (off_tmr) compte en
+;   pas de 4 images : 100 a 163 pas = 400 a 652 images = 8 a 13 s. Zero = a retirer au hasard.
+;   Une seule grenade ennemie a la fois : si elle est occupee, nouvel essai 2 s plus tard.
+;------------------------------------------------------------------------------
+m_officers_update:
+            ld a,(nb_wanted)
+            add a,a
+            add a,a
+            add a,a
+            add a,a
+            ld c,a                      ; C = fin de la liste des fiches
+            xor a
+            ld ixl,a
+            ld ixh,hi(enemies)
+.next       ld a,ixl
+            cp c
+            ret nc
+            rrca
+            rrca
+            rrca
+            rrca
+            and 15
+            ld e,a
+            ld d,0
+            ld hl,slot_gren             ; cette place lance-t-elle des grenades ? (bit 0)
+            add hl,de
+            ld a,(hl)
+            and #71                     ; bit 0 : lance des grenades ; bits 4-6 : classe (6 = grenadier)
+            ld b,a
+            and 1
+            jp z,.step
+            ld a,b
+            and #70
+            cp #60
+            ld a,0
+            jr nz,.nogr
+            inc a
+.nogr       ld (og_gr),a                ; 1 : cet officier est un grenadier (cadence de 2 s, portee +20 %)
+            ld hl,off_tmr
+            add hl,de                   ; HL = minuterie de cet officier
+            ld a,(ix+E_STATE)
+            dec a
+            jr z,.alive
+            ld (hl),0                   ; mort ou absent : on repart de zero
+            jr .step
+.alive      ld a,(hl)
+            or a
+            jr nz,.armed
+            push hl
+            call rand                   ; A = hasard
+            pop hl
+            ld b,a
+            ld a,(og_gr)
+            or a
+            ld a,b
+            jr nz,.rgr
+            and 63
+            add a,100
+            ld (hl),a
+            jr .step
+.rgr        and 15                      ; grenadier : premier lancer dans 40 a 100 images, ensuite toutes les 2 s (25 pas de 4 images)
+            add a,10
+            ld (hl),a
+            jr .step
+.armed      dec (hl)
+            jr nz,.step
+            ld a,(og_gr)
+            or a
+            jr z,.ofc
+            push bc
+            call gr_dist                ; grenadier : trop loin pour lancer : nouvel essai dans 24 images
+            pop bc
+            cp GR_THROW+1
+            jr nc,.retry
+.ofc        ld a,(eg_state)             ; echeance : grenade libre et Papi en jeu ?
+            ld b,a
+            ld a,(p_state)
+            or b
+            jr z,.throw
+.retry      ld a,(og_gr)                ; non : nouvel essai (officier : 100 images, grenadier : 24)
+            or a
+            ld a,25
+            jr z,.rr
+            ld a,6
+.rr         ld (hl),a
+            jr .step
+.throw      ld a,(og_gr)
+            or a
+            jr nz,.gthrow
+            push bc
+            call egrenade_throw
+            pop bc
+            jr .step
+.gthrow     ld (hl),25                  ; grenadier : prochain lancer dans 2 s (25 pas de 4 images), portee des officiers + 20 %
+            ld a,EG_RANGEX*6/5
+            ld (eg_rx),a
+            ld a,EG_RANGEY*6/5
+            ld (eg_ry),a
+            push bc
+            call egrenade_throw_r
+            pop bc
+.step       ld a,ixl
+            add a,ESIZE
+            ld ixl,a
+            jp .next
+
+; lance la grenade de l'officier IX vers la position de Papi, a portee de grenade au plus (vol de 64 images)
+egrenade_throw:                         ; portee des officiers
+            ld a,EG_RANGEX
+            ld (eg_rx),a
+            ld a,EG_RANGEY
+            ld (eg_ry),a
+egrenade_throw_r:                       ; portee eg_rx / eg_ry (le grenadier : +20 %)
+            ld a,(ix+E_X)
+            add a,2
+            ld b,a                      ; B = x de depart
+            ld a,(ix+E_Y)
+            add a,3
+            ld c,a                      ; C = y de depart
+            xor a
+            ld (eg_xf),a
+            ld (eg_yf),a
+            ld a,b
+            ld (eg_x),a
+            ld a,c
+            ld (eg_y),a
+            ld a,(p_x)
+            add a,2
+            sub b
+            ld hl,eg_rx
+            ld e,(hl)
+            call .clamp                 ; elle ne va pas plus loin que celle de Papi
+            call .v4                    ; vitesse = ecart x 4 : 64 images x 4 / 256 = l'ecart
+            ld (eg_vx),hl
+            ld a,(p_y)
+            add a,3
+            sub c
+            ld hl,eg_ry
+            ld e,(hl)
+            call .clamp
+            call .v4
+            ld (eg_vy),hl
+            xor a
+            ld (eg_t),a
+            dec a
+            ld (eg_ox),a                ; rien a effacer
+            ld a,1
+            ld (eg_state),a
+            ld a,7                      ; son du lancer
+            jp sfx
+.v4         ld l,a
+            add a,a
+            sbc a,a
+            ld h,a                      ; HL = A etendu au signe
+            add hl,hl
+            add hl,hl
+            ret
+.clamp      jr c,.cneg                  ; retenue du sub = ecart negatif (8 bits signes ne suffisent pas : 200 lignes)
+            cp e
+            ret c
+            ld a,e
+            ret
+.cneg       neg
+            cp e
+            jr c,.cok
+            ld a,e
+.cok        neg
+            ret
+
+;------------------------------------------------------------------------------
+; GRENADIER : ne cherche pas le contact. Distance m a Papi = max(3 x |dx octets|, |dy lignes|) (en gros des lignes) :
+;   m > GR_FAR  -> il se rapproche (champ de distances, comme les autres) ; m < GR_NEAR -> il recule ; entre les deux il reste sur place, face a Papi.
+;   Il lance une grenade toutes les 2 s tant que m <= GR_THROW (voir officers_update).
+;------------------------------------------------------------------------------
+GR_NEAR     equ 40
+GR_FAR      equ 62
+GR_THROW    equ 76              ; portee de lancer : celle des officiers (60 lignes) + 20 %, plus la dispersion
+grenadier_think:
+            call gr_dist                ; A = m
+            cp GR_FAR
+            jr c,.mid
+            call enemy_think.nocov      ; trop loin : il suit de loin (champ de distances, comme les autres)
+            jr gr_face
+.mid        cp GR_NEAR
+            jr c,.back
+            jp enemy_think.near         ; a bonne distance : il s'arrete, face a Papi (il ne tire pas : voir enemy_try_fire)
+.back       call aim_dir                ; trop pres : il recule (direction opposee a Papi)
+            ld c,a
+            ld b,0
+            ld hl,opp_tab
+            add hl,bc
+            ld a,(hl)
+            call enemy_setdir
+            ld (ix+E_TIMER),8           ; il repense plus souvent quand il recule
+; en marchant en haut ou en bas il reste face a Papi : de face s'il est plus bas, de dos s'il est plus haut (la planche n'a que 4 directions)
+gr_face:    ld a,(ix+E_DIR)
+            sub 2
+            cp 2
+            ret nc
+            ld a,(p_y)
+            cp (ix+E_Y)
+            ld a,2
+            jr nc,.f
+            inc a
+.f          ld (ix+E_DIR),a
+            ret
+opp_tab:    db 1,0,3,2,7,6,5,4
+
+; distance du grenadier IX a Papi : A = max(3 x |dx|, |dy|), plafonnee a 255
+gr_dist:
+            ld a,(p_x)
+            sub (ix+E_X)
+            jr nc,.x
+            neg
+.x          ld c,a
+            add a,a
+            add a,c                     ; 3 x |dx| (au plus 3 x 78 = 234)
+            ld c,a
+            ld a,(p_y)
+            sub (ix+E_Y)
+            jr nc,.y
+            neg
+.y          cp c
+            ret nc
+            ld a,c
+            ret
+
             assert $<=VOICE_DATA                ; (la voix et les images des vehicules sont ajoutees apres le code par tools/mkdisk.py : build/boss_code.bin + voice.bin + trucks.bin)
 TRUCK_DATA  equ BOSS_LOAD+TRUCK_OFF
