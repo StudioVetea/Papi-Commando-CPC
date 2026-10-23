@@ -37,8 +37,23 @@ static FILE* wav = 0; static long wav_n = 0; static int wav_on = 0;
 static unsigned watch_addr = 0x10000, watch_hits = 0; static uint8_t watch_val; static unsigned trap_pc = 0x10000, trap_n = 0;
 static int sodd_done = 1; static unsigned spmin = 0x200, spmin_pc = 0;
 static unsigned ring[8192], ring_i = 0, ring_last = 0x10000;
+static int crtclog = 0, scan_ln = 0; static unsigned pv = 0, pr = 0, ph = 0; static long ticks_total = 0;
 static void dbg(void* ud, uint64_t pins) {
-    (void)ud; (void)pins;
+    (void)ud;
+    if (crtclog) {
+        ticks_total++;
+        unsigned h = sys.crtc.h_ctr, v = sys.crtc.v_ctr, r = sys.crtc.r_ctr;
+        if (h < ph) scan_ln++;
+        if (v == 0 && r == 0 && (pv != 0 || pr != 0)) scan_ln = 0;
+        if (v != pv && crtclog > 1) printf("  row %u starts at line %d (r9=%d)\n", v, scan_ln, sys.crtc.reg[9]);
+        pv = v; pr = r; ph = h;
+        { static unsigned lpc = 0; if (sys.cpu.pc == 0x0038 && lpc != 0x38) printf("INT at line %d (h=%u)\n", scan_ln, h); lpc = sys.cpu.pc; }
+        if ((pins & (Z80_IORQ | Z80_WR)) == (Z80_IORQ | Z80_WR)) {
+            unsigned addr = Z80_GET_ADDR(pins);
+            if ((addr & 0x4000) == 0 && (addr & 0x0300) == 0x0100)
+                printf("CRTC R%u <- %u  at line %d (h=%u, v=%u r=%u) pc=%04X\n", sys.crtc.sel & 31, Z80_GET_DATA(pins), scan_ln, h, v, r, sys.cpu.pc);
+        }
+    }
     if (sys.cpu.iff1 && sys.cpu.sp >= 0x100 && sys.cpu.sp <= 0x200 && sys.cpu.sp < spmin) { spmin = sys.cpu.sp; spmin_pc = sys.cpu.pc; }
     if (sys.cpu.pc != ring_last) { ring_last = sys.cpu.pc; ring[ring_i++ & 8191] = ring_last; }
     if (sys.cpu.pc == trap_pc && (!getenv("TRAPW") || (unsigned)(mem_rd(&sys.mem, sys.cpu.sp) | (mem_rd(&sys.mem, sys.cpu.sp + 1) << 8)) == (unsigned)strtol(getenv("TRAPW"), 0, 16)) && trap_n++ < 1) { printf("historique PC :"); for (int k = 0; k < 8192; k++) printf(" %04X", ring[(ring_i + k) & 8191]); printf("\n"); printf("trap %04X : SP=%04X IX=%04X IY=%04X BC=%04X DE=%04X HL=%04X pile :", trap_pc, sys.cpu.sp, sys.cpu.ix, sys.cpu.iy, sys.cpu.bc, sys.cpu.de, sys.cpu.hl); for (int k = 0; k < 12; k++) printf(" %04X", mem_rd(&sys.mem, sys.cpu.sp + 2 * k) | (mem_rd(&sys.mem, sys.cpu.sp + 2 * k + 1) << 8)); printf("\n"); }
@@ -114,6 +129,9 @@ int main(int argc, char** argv) {
         char* c = argv[a]; char* p = strchr(c, ':'); char* v = p ? p + 1 : "";
         if (!strncmp(c, "run:", 4)) frames(atoi(v));
         else if (!strncmp(c, "shot:", 5)) shot(v);
+        else if (!strncmp(c, "vshot:", 6)) { int g = 0; bool prev = sys.crtc.vs; while (g++ < 5000) { cpc_exec(&sys, 32); if (sys.crtc.vs && !prev) break; prev = sys.crtc.vs; } shot(v); }
+        else if (!strncmp(c, "vbl:", 4)) { int g = 0; bool prev = sys.crtc.vs; while (g++ < 5000) { cpc_exec(&sys, 32); if (sys.crtc.vs && !prev) break; prev = sys.crtc.vs; } }
+        else if (!strncmp(c, "crtclog:", 8)) crtclog = atoi(v);
         else if (!strncmp(c, "bot:", 4)) { bot = atoi(v); if (!bot) cpc_joystick(&sys, 0); }
         else if (!strncmp(c, "seed:", 5)) bot_seed = atoi(v);
         else if (!strncmp(c, "joy:", 4)) cpc_joystick(&sys, (uint8_t)strtol(v, 0, 0));
