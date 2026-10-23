@@ -58,11 +58,11 @@ zone_dir:
  dw #5827
  db 0
  db 30,2,9
- dw #62A2
+ dw #62D5
  db 0
  db 31,2,9
- dw #629B
+ dw #62CE
  db 0
  db 32,2,9
- dw #6291
+ dw #62C6
  db 0

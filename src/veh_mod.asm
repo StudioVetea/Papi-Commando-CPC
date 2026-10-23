@@ -8,6 +8,7 @@
 ;   Les bidons explosifs (case de la grille = 7 : obstacle comme une caserne) explosent au bout de 3 balles ou sous une grenade : 3 degats autour,
 ;   puis deux flammes animees (case = 4) qui brulent quiconque les touche.
 ;
+;   Mode 4 (zone 5) : bidons explosifs seulement, sans camion (ni contact, ni larguage d'ennemis).
 ;   Mode (veh_on) : 1 camion de troupes, points de vie propres (V_HP), +500 points, un autre revient (missions Z80 et chrono) ;
 ;                   2 camion, points de vie = kills_left (HUD en couleur), victoire normale ; 3 WarTruck, idem, fin de zone.
 ;   Le module ne voit pas le miroir (banque 1) : il efface par la rampe b1_restore et dessine par-dessus (ecran) ; b1_wtr dessine une tuile (ecran ET miroir).
@@ -55,7 +56,9 @@ mv_tick:    ld a,(p_state)
             or a
             call z,mv_init
             call mv_flash
-            call mv_truck
+            ld a,(veh_on)               ; mode 4 : bidons explosifs seulement (zone 5), pas de camion
+            cp 4
+            call nz,mv_truck
             call mv_contact
             call mv_fx
             call mv_flames

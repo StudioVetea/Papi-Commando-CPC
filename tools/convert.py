@@ -250,12 +250,12 @@ ZINFO = {1: dict(title='OUTPOST C-01', tmx='ZoneTest.tmx', tileset='TileSet1.png
          4: dict(title='THE LOST ROAD', tmx='Zone4.tmx', tileset='TileSet4.png', obstacle='TileSet4Obstacles.png', spawn='auto', first=1, water='Eau_3frames_12x8.png',
                  gid0=117, flame='Flamme_3frames_12x8_Z4.png'),
          # zone 5 : 1 tileset (tuiles 157-196 dans le TMX) ; marron des obstacles = trou de sniper ; bleu clair = zone du boss (a venir, sans effet pour l'instant) ; les casernes (violet) font sortir les unites
-         5: dict(title='HELMUTS BUNKER', tmx='Zone5.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn='auto', first=1, gid0=157)}
-def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None, snipers=0):
+         5: dict(title='HELMUTS BUNKER', tmx='Zone5.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn='auto', first=1, gid0=157, flame='Flamme_3frames_12x8_Z4.png')}
+def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None, snipers=0, barrels=0):
     zi = ZINFO[zn]
     if veh >= 2: units += 2                     # vehicule a barre de vie : 2 places d'ennemi factices (0 et 1, jamais utilisees : elles font cesser les hooks du boss) + les unites transportees
     z = dict(name='zone%02d' % n, zn=zn, spawn_first=zi.get('first', 0), mnum=n, z80=z80, title=zi['title'], units=units, kills=time if time else kills, mix=mix, count=set(count), time=bool(time),
-             art=list(art), snipers=snipers, units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'))
+             art=list(art), snipers=snipers, barrels=barrels, units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'))
     if time: z['text'] = ['TIME ATTACK !', 'SURVIVE %d S.' % time]
     else:
         noun = {(1,): 'SOLDIERS', (2,): 'OFFICERS', (3,): 'GENERALS', (6,): 'GRENADIERS', (7,): 'SNIPERS'}.get(tuple(sorted(count)), 'ENEMIES')
@@ -335,9 +335,9 @@ ZONES = [
             dict(unit=1, x=48, y=148, walk=True), dict(unit=1, x=58, y=148, walk=True)]),
     # Zone 5 "Helmuts Bunker" (cahier des charges de la zone 5) : 'units' = unites maxi a l'ecran, snipers compris (snipers = nombre de trous utilises, parmi les 4 de la carte) ;
     #   le pourcentage porte sur les autres unites.  La mission finale (Boss Helmut) viendra apres.
-    _m(1, 7, [(1, 40), (6, 60)], kills=20, count=(6,), zn=5, snipers=2),
-    _m(2, 8, [(1, 40), (6, 60)], time=35, zn=5, snipers=3),
-    _m(3, 9, [(1, 50), (6, 50)], kills=15, count=(7,), zn=5, snipers=4),
+    _m(1, 7, [(1, 40), (6, 60)], kills=20, count=(6,), zn=5, snipers=2, barrels=1),
+    _m(2, 8, [(1, 40), (6, 60)], time=35, zn=5, snipers=3, barrels=1),
+    _m(3, 9, [(1, 50), (6, 50)], kills=15, count=(7,), zn=5, snipers=4, barrels=1),
     # Images supplementaires de l'ecran de mission (boss, batiments...) : ajouter a _m(...) un argument  art=[...]  (et show_units=False pour ne pas afficher les ennemis) dont chaque element est
     #   dict(png='Boss.png', fw=36, fh=36, frames=4, x=30, y=110, walk=True)   image(s) cote a cote, fw x fh pixels (paire, 80 pixels maxi), 1, 2 ou 4 images
     #   dict(tiles=[[8, 9, 10], [12, 13, 14]], x=4, y=110)                       bloc de tuiles du decor (12 x 8 pixels), numeros du TileSet
@@ -607,6 +607,7 @@ def build_zone(z):
             hdr[8], hdr[9], hdr[10] = -(-hp * 3 // 4), -(-hp // 2), -(-hp // 4)
         if veh == 2: hdr[11] = 50                      # ArmyTruck : 500 points
         if veh == 3: hdr[11], hdr[14], hdr[15] = z.get('pts', 75), 3, 50
+    if z.get('barrels'): hdr[95] = 4                  # mode 4 : bidons explosifs sans vehicule (module des vehicules, banque 7)
     hdr[88], hdr[89], hdr[90], hdr[91] = wimg & 255, wimg >> 8, wbuf & 255, wbuf >> 8
     hdr[92], hdr[93], hdr[94] = 0x10, 0x38, 0      # ptr = GRID+16, in = 0 ; eau : adresse des 3 images et du tampon (0 : pas d'eau), lues par wtr_load
     ext = slot_types + [mix[0][0]] * (12 - units)      # places au-dela de la zone (essais avec plus d'ennemis) : comme le 1er type
