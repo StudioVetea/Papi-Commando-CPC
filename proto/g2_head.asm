@@ -193,8 +193,13 @@ boot:   di
 .v2     in a,(c)
         rra
         jr nc,.v2
+        xor a
+        ld (icnt),a             ; VSYNC vient de commencer : l'interruption de la ligne 234 (2 lignes apres) arrive
+.v3     ld a,(icnt)
+        or a
+        jr z,.v3
         ld a,5
-        ld (icnt),a             ; la 1re interruption qui suit (ligne 286) est la numero 0
+        ld (icnt),a             ; c'etait la numero 5 : la suivante (ligne 286) est la numero 0
         jp mainloop
 
 dlyhl:  dec hl                  ; HL iterations de 7 NOPs

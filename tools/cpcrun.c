@@ -46,8 +46,9 @@ static void dbg(void* ud, uint64_t pins) {
         if (h < ph) scan_ln++;
         if (v == 0 && r == 0 && (pv != 0 || pr != 0)) scan_ln = 0;
         if (v != pv && crtclog > 1) printf("  row %u starts at line %d (r9=%d)\n", v, scan_ln, sys.crtc.reg[9]);
+        { static bool pvs=false; if (crtclog && sys.crtc.vs && !pvs) printf("VSYNC start at line %d\n", scan_ln); pvs = sys.crtc.vs; }
         pv = v; pr = r; ph = h;
-        { static unsigned lpc = 0; if (sys.cpu.pc == 0x0038 && lpc != 0x38) printf("INT at line %d (h=%u)\n", scan_ln, h); lpc = sys.cpu.pc; }
+        { static unsigned lpc = 0; if (sys.cpu.pc == 0x0038 && lpc != 0x38) printf("INT at line %d (h=%u) icnt=%u\n", scan_ln, h, mem_rd(&sys.mem, 0x3F00)); lpc = sys.cpu.pc; }
         if ((pins & (Z80_IORQ | Z80_WR)) == (Z80_IORQ | Z80_WR)) {
             unsigned addr = Z80_GET_ADDR(pins);
             if ((addr & 0x4000) == 0 && (addr & 0x0300) == 0x0100)
