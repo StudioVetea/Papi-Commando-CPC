@@ -1214,7 +1214,8 @@ mv_explode: ld (iy+3),2
             jr nc,.en
             push bc
             ld b,5                      ; 5 points de degat (un par appel : s'arrete a la mort)
-.dm         call enemy_killed
+.dm         ld hl,enemy_killed          ; via la rampe : la mort d'un grenadier appelle gr_call (banque 7) et ne doit pas se faire depuis la banque 7
+            call b1_kill
             ld a,(ix+E_STATE)
             dec a
             jr nz,.dd
@@ -1368,7 +1369,8 @@ mv_hazard:  ld a,(v_nb)
             and 7
             cp 4
             jr nz,.nk
-            call enemy_kill_now
+            ld hl,enemy_kill_now
+            call b1_kill
 .nk         pop bc
 .n          ld de,ESIZE
             add ix,de

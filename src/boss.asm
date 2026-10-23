@@ -69,6 +69,15 @@ b1_restore: push bc                     ; B = x, C = y, D = largeur, E = hauteur
             ld bc,#7F00+CFG_BOSS
             out (c),c
             ret
+b1_kill:    push bc                     ; HL = routine de papicpc (enemy_killed, enemy_kill_now...) appelee en config normale, BC conserve
+            ld bc,#7F00+GAME_CFG
+            out (c),c
+            call .j
+            ld bc,#7F00+CFG_BOSS
+            out (c),c
+            pop bc
+            ret
+.j          jp (hl)
 b1_wtr:     ld bc,#7F00+GAME_CFG        ; HL = case de la grille, E = 16 x image : dessine une image de la tuile (ecran et miroir, voir wtr_draw)
             out (c),c
             call wtr_draw
