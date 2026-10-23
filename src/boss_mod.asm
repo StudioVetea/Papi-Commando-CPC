@@ -586,5 +586,225 @@ gr_dist:
             ld a,c
             ret
 
+
+;------------------------------------------------------------------------------
+; SNIPER C++ (classe 7) : immobile dans son trou (sa position : spawn_tab[15 - numero de place], ecrite par convert.py).
+;   E_STATE : 0 cache (E_TICK:E_TIMER = delai de 3 a 10 s avant la prochaine sortie), 3 sorti mais intouchable, 1 sorti et touchable (balles et grenade).
+;   E_DX = phase : 0 sortie (4 images de 8 images : touchable des la 3e), 1 vise Papi (5 s au plus, un tir toutes les 2 s, bas / bas droite / bas gauche),
+;   2 rentre dans son trou (4 images : touchable pendant les 2 premieres). E_TICK = images ecoulees dans la phase. E_DIR = direction du tir (2, 4 ou 5).
+;   Papi n'est pas en dessous de lui : il ne sort pas, ou il rentre. Sortie de sn_mod : A = 0 rien a faire, 1 effacer son image, 2 + n dessiner l'image n.
+;------------------------------------------------------------------------------
+sn_slot:    ld a,ixl                    ; DE = numero de sa place
+            rrca
+            rrca
+            rrca
+            rrca
+            and 15
+            ld e,a
+            ld d,0
+            ret
+
+sn_rearm:   call rand                   ; prochaine sortie : 150 a 500 images (3 a 10 s), sur 16 bits dans E_TICK:E_TIMER
+            and 1
+            ld c,a
+            call rand
+            ld l,a
+            ld h,0
+            ld de,150
+            add hl,de
+            bit 0,c
+            jr z,.s
+            ld de,95
+            add hl,de
+.s          ld (ix+E_TIMER),l
+            ld (ix+E_TICK),h
+            xor a
+            ret
+
+sn_mod:     ld a,(ix+E_STATE)
+            or a
+            jp nz,.vis
+            ld a,(ix+E_X)
+            or a
+            jr nz,.cd
+            call sn_slot                ; premier passage : il prend la place de son trou, puis attend
+            ld a,e
+            add a,a
+            ld e,a
+            ld hl,spawn_tab+30
+            or a
+            sbc hl,de
+            ld a,(hl)
+            ld (ix+E_X),a
+            inc hl
+            ld a,(hl)
+            ld (ix+E_Y),a
+            jp sn_rearm
+.cd         ld a,(en_dt)
+            ld c,a
+            ld a,(ix+E_TIMER)
+            sub c
+            ld (ix+E_TIMER),a
+            jr c,.brw
+            jr nz,.wait
+            ld a,(ix+E_TICK)
+            or a
+            jr z,.go
+.wait       xor a
+            ret
+.brw        ld a,(ix+E_TICK)
+            or a
+            jr z,.go
+            dec (ix+E_TICK)
+            xor a
+            ret
+.go         ld a,(ix+E_Y)               ; Papi doit etre en dessous de lui, sinon il reste cache : nouvel essai dans 30 images
+            add a,6
+            ld hl,p_y
+            cp (hl)
+            jr c,.ok
+            jr z,.ok
+            ld (ix+E_TIMER),30
+            ld (ix+E_TICK),0
+            xor a
+            ret
+.ok         ld b,(ix+E_X)               ; il sort : il occupe ses cases, 3 PV
+            ld c,(ix+E_Y)
+            call enemy_claim
+            ld (ix+E_STATE),3
+            xor a
+            ld (ix+E_DX),a
+            ld (ix+E_TICK),a
+            ld (ix+E_OX),#FF
+            ld (ix+E_LAST),#FF
+            ld (ix+E_DIR),2
+            call sn_slot
+            ld hl,slot_hp0
+            add hl,de
+            ld a,(hl)
+            ld hl,slot_hp
+            add hl,de
+            ld (hl),a
+            ld hl,slot_flash
+            add hl,de
+            ld (hl),0
+            xor a
+.show       cp (ix+E_LAST)              ; A = image voulue : redessin seulement si elle change
+            jr nz,.d
+            xor a
+            ret
+.d          add a,2
+            ret
+
+.vis        call sn_slot                ; clignotement blanc (touche sans mourir) : il se decompte, puis image normale
+            ld hl,slot_flash
+            add hl,de
+            ld a,(hl)
+            or a
+            jr z,.nofl
+            ld b,a
+            ld a,(en_dt)
+            ld c,a
+            ld a,b
+            sub c
+            jr z,.flend
+            jr nc,.flst
+.flend      xor a
+            ld (hl),a
+            ld (ix+E_LAST),#FF
+            jr .nofl
+.flst       ld (hl),a
+.nofl       ld a,(en_dt)
+            add a,(ix+E_TICK)
+            ld (ix+E_TICK),a
+            ld a,(ix+E_DX)
+            or a
+            jr z,.emerge
+            dec a
+            jr z,.aim
+            ld a,(ix+E_TICK)            ; --- il rentre
+            cp 32
+            jr nc,.hide
+            cp 16
+            jr c,.rt
+            ld (ix+E_STATE),3
+.rt         rrca
+            rrca
+            rrca
+            and 3
+            add a,4
+            jr .show
+.hide       call enemy_free
+            ld (ix+E_STATE),0
+            call sn_rearm
+            ld a,(ix+E_OX)
+            inc a
+            ret z
+            ld a,1
+            ret
+.emerge     ld a,(ix+E_TICK)            ; --- il sort
+            cp 32
+            jr nc,.toaim
+            cp 16
+            jr c,.em1
+            ld (ix+E_STATE),1
+.em1        rrca
+            rrca
+            rrca
+            and 3
+            jr .show
+.toaim      ld (ix+E_DX),1
+            xor a
+            ld (ix+E_TICK),a
+            ld (ix+E_STATE),1
+            call fire_ptr               ; premier tir 1 s plus tard
+            ld a,(frame)
+            sub 50
+            ld (hl),a
+.aim        ld a,(ix+E_TICK)            ; --- il vise
+            cp 244
+            jr nc,.leave
+            ld a,(ix+E_Y)
+            add a,6
+            ld hl,p_y
+            cp (hl)
+            jr c,.below
+            jr nz,.leave
+.below      ld a,(p_x)
+            sub (ix+E_X)
+            ld c,4
+            jr nc,.dx
+            neg
+            ld c,5
+.dx         cp 4
+            jr nc,.dset
+            ld c,2
+.dset       ld (ix+E_DIR),c
+            call fire_ptr
+            ld a,(frame)
+            sub (hl)
+            cp 100
+            jr c,.nofire
+            ld a,(frame)
+            ld (hl),a
+            xor a
+            ld (cov_now),a
+            call enemy_shoot
+.nofire     ld a,(ix+E_DIR)
+            ld b,8
+            cp 2
+            jr z,.sh2
+            ld b,12
+            cp 4
+            jr z,.sh2
+            ld b,16
+.sh2        ld a,b
+            jp .show
+.leave      ld (ix+E_DX),2
+            xor a
+            ld (ix+E_TICK),a
+            ld a,4
+            jp .show
+
             assert $<=VOICE_DATA                ; (la voix et les images des vehicules sont ajoutees apres le code par tools/mkdisk.py : build/boss_code.bin + voice.bin + trucks.bin)
 TRUCK_DATA  equ BOSS_LOAD+TRUCK_OFF

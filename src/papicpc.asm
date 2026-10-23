@@ -1482,7 +1482,7 @@ bullet_start:
 
 ; portee des balles, en pas (une balle de Papi fait 4 px de large / 6 de haut par pas, celles des ennemis la moitie) :
 ; Papi 76 px, soldat 68, officier 76, general 85, boss 94 (cahier du 20/10 moins 15 %), vehicule infinie.  Par classe : pas horizontaux, pas verticaux ou diagonaux
-rng_tab:    db 19,13, 34,23, 38,25, 42,28, 47,31, 255,255
+rng_tab:    db 19,13, 34,23, 38,25, 42,28, 47,31, 255,255, 254,254, 254,254       ; (classes 6 et 7 : le sniper, portee quasi illimitee ; 254 : sa balle va a la vitesse de Papi)
 
 ; tir en couverture de Papi : A = direction, H = x, L = y du tireur, IX = balle qui vient de partir.
 ; Si la case JUSTE a cote de son corps, dans la direction du tir, est un mur rouge (il est colle a l'obstacle),
@@ -1551,9 +1551,12 @@ bullets_update:
             jp nz,.k2                   ; 2 = touchee, a effacer ; 3 = eclat
             ld a,(bul_n)
             cp 4
+            jr c,.pb
+            ld a,(ix+B_RNG)             ; portee 254 : balle de sniper, a la vitesse de Papi
+            cp 254
             ld a,EBUL_SPEED             ; balles ennemies : 60 % des images, d'un pas moitie moins long
-            jr nc,.sp
-            ld a,PBUL_SPEED             ; balles de Papi : 70 % des images
+            jr nz,.sp
+.pb         ld a,PBUL_SPEED             ; balles de Papi : 70 % des images
 .sp         add a,(ix+B_ACC)
             ld (ix+B_ACC),a
             jp nc,.next
@@ -1886,6 +1889,9 @@ en_loop:    ld a,(tick)
             ld d,0
             ld iy,dt_tab-4
             add iy,de                   ; IY -> pas a faire pour ce dt
+            call gr_cls
+            cp #70
+            jp z,sn_run                 ; sniper
             ld a,(ix+E_STATE)
             dec a
             jp z,enemy_alive
@@ -1990,7 +1996,7 @@ seek_tab:   db 2,2, 1,1, 3,0, 0,1, 4,0
             db 34,2, 33,1, 35,0, 32,1, 36,0
 
 ; donnees (pas de code ici : le code qui precede ne doit jamais "tomber" dedans)
-type_ptr:   dw soldat_frames,officer_frames,general_frames,general_frames,boss_frames,boss_frames       ; types 4 (corps du boss) et 5 (tete) : la table des generals sert au corps
+type_ptr:   dw soldat_frames,officer_frames,general_frames,general_frames,boss_frames,boss_frames,officer_frames       ; types 4 (corps du boss) et 5 (tete) : la table des generals sert au corps
             include 'zones.inc'         ; repertoire des zones (genere)
 DT_FX       equ 0
 DT_XI       equ 1
@@ -3047,9 +3053,12 @@ enemy_shoot:
             ld l,e
             call bullet_start
             jr nz,.nf                   ; pas de balle partie
+            ld a,(shot_cls)
+            cp 7
+            jr z,.nsra                  ; sniper : la balle garde le pas entier (comme Papi)
             sra (ix+B_DX)               ; pas de la balle ennemie divise par deux
             sra (ix+B_DY)               ; (avec EBUL_SPEED : 60 % de l'ancienne vitesse, soit -40 %)
-            ld a,(cov_now)              ; tir en couverture : la balle traverse l'obstacle derriere lequel il se tient
+.nsra            ld a,(cov_now)              ; tir en couverture : la balle traverse l'obstacle derriere lequel il se tient
             or a
             jr z,.nc
             ld (ix+B_PASS),3
@@ -3370,7 +3379,11 @@ officers_update:
 gr_think:   ld a,2                      ; reflexion du grenadier IX
             jp gr_call
 ; Z si la place de l'ennemi IX est un grenadier (classe 6 : bits 4-6 de sa fiche 'gren') ; A, HL detruits
-gr_test:    ld a,ixl
+gr_test:    call gr_cls
+            cp #60
+            ret
+; A = classe de la place de l'ennemi IX (bits 4-6 de sa fiche 'gren', laisses en place : #10 soldat ... #60 grenadier, #70 sniper) ; HL detruit
+gr_cls:     ld a,ixl
             rrca
             rrca
             rrca
@@ -3381,8 +3394,28 @@ gr_test:    ld a,ixl
             ld h,hi(slot_gren)
             ld a,(hl)
             and #70
-            cp #60
             ret
+
+; SNIPER (classe 7) : immobile dans son trou ; tout son comportement est dans la banque 7 (boss_mod.asm : sn_mod). Sortie de sn_mod : A = 0 rien, 1 effacer, 2 + n : dessiner l'image n
+sn_run:     ld a,(ix+E_STATE)
+            cp 2
+            jp z,enemy_dying            ; (mort : l'animation habituelle)
+            call sn_call
+            or a
+            jp z,enemy_next
+            dec a
+            jr z,.er
+            dec a
+            jp enemy_draw_frame
+.er         ld a,(ix+E_OX)              ; rien de dessine : rien a effacer
+            inc a
+            jp z,enemy_next
+            ld b,(ix+E_OX)
+            ld c,(ix+E_OY)
+            ld (ix+E_OX),#FF
+            ld de,#060C
+            call restore_xy
+            jp enemy_next
 
 ; grenade des officiers : vol, atterrissage, explosion qui touche Papi
 egrenade_update:

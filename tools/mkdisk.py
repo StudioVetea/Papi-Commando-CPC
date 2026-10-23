@@ -10,7 +10,11 @@ def extend(n):
     """RASM ne formate que les pistes utilisees par le fichier : on ajoute des pistes (copie de la derniere : 9 secteurs de 512, remplis de #E5) jusqu'a la piste n incluse (42 pistes au plus)"""
     global sizes, off
     last = max(i for i, v in enumerate(sizes) if v)
-    assert n < ntr * d[0x31], 'la disquette depasse %d pistes' % (ntr * d[0x31])
+    global ntr
+    maxtrk = int(os.environ.get('PAPI_MAXTRK', '44'))          # 44 pistes depuis la zone 5 (un lecteur CPC 3 pouces en lit 42) ; PAPI_MAXTRK=42 pour verifier la limite
+    assert n < max(maxtrk, ntr * d[0x31]), 'la disquette depasse %d pistes' % max(maxtrk, ntr * d[0x31])
+    if n >= ntr * d[0x31]:
+        sizes += [0] * (n + 1 - len(sizes)); ntr = n + 1; d[0x30] = ntr
     while last < n:
         last += 1
         blk = bytearray(d[off[last - 1]:off[last - 1] + sizes[last - 1]])

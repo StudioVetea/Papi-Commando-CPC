@@ -230,6 +230,9 @@ UNITS = {
     # GRENADIER (cahier des charges du grenadier C++) : 1 PV, 20 points, vitesse des soldats, ne lance que des grenades (toutes les 2 s, portee des officiers +20 %), garde ses distances,
     #   ne se met pas a couvert ; planche de 4 directions (droite, gauche, bas, haut) + mort : 'rows' = ligne de la planche pour chacune des 9 lignes du moteur (4 : mort)
     6: dict(name='grenadier', sheet='GrenadierC___12x12.png', fire=240, hp=1, pts=2, spd=0, gren=1, cls=6, rows=[0, 1, 2, 3, 0, 1, 0, 1, 4]),
+    # SNIPER C++ (cahier des charges du sniper) : 3 PV, 50 points, immobile dans un trou de la carte (marron des obstacles), sort, vise 5 s, tire toutes les 2 s, rentre ; tout son
+    #   comportement est dans la banque 7 (sn_mod). Planche de 6 lignes : sortie, retour, vise bas / bas droite / bas gauche (une image), mort (4 images) : 'rows' = ligne pour chacune des 9 lignes du moteur
+    7: dict(name='sniper', sheet='SniperC___12x12.png', fire=96, hp=3, pts=5, spd=0, gren=0, cls=7, rows=[0, 1, 2, 3, 4, 4, 4, 4, 5]),
     # BOSS (12 x 24) : deux places d'ennemi empilees. 4 = le corps (pieds : c'est lui qui reflechit, marche et tire), 5 = la tete,
     # collee au-dessus (12 lignes plus haut). La planche fait 12 x 24 par image ; les 4 images de mort sont des explosions.
     4: dict(name='boss_corps', sheet='BossCaporal_12x24.png', half=1, fire=96, hp=30, pts=20, spd=0, gren=0, cls=4),
@@ -245,15 +248,17 @@ ZINFO = {1: dict(title='OUTPOST C-01', tmx='ZoneTest.tmx', tileset='TileSet1.png
                  spawn='auto', first=1, water='Eau_3frames_12x8.png'),
          # zone 4 : 1 tileset (numeros de tuile 117-156 dans le TMX), eau, bidons explosifs (carre blanc) et routes (carre noir) ; les ennemis viennent des vehicules (veh)
          4: dict(title='THE LOST ROAD', tmx='Zone4.tmx', tileset='TileSet4.png', obstacle='TileSet4Obstacles.png', spawn='auto', first=1, water='Eau_3frames_12x8.png',
-                 gid0=117, flame='Flamme_3frames_12x8_Z4.png')}
-def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None):
+                 gid0=117, flame='Flamme_3frames_12x8_Z4.png'),
+         # zone 5 : 1 tileset (tuiles 157-196 dans le TMX) ; marron des obstacles = trou de sniper ; bleu clair = zone du boss (a venir, sans effet pour l'instant) ; les casernes (violet) font sortir les unites
+         5: dict(title='HELMUTS BUNKER', tmx='Zone5.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn='auto', first=1, gid0=157)}
+def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None, snipers=0):
     zi = ZINFO[zn]
     if veh >= 2: units += 2                     # vehicule a barre de vie : 2 places d'ennemi factices (0 et 1, jamais utilisees : elles font cesser les hooks du boss) + les unites transportees
     z = dict(name='zone%02d' % n, zn=zn, spawn_first=zi.get('first', 0), mnum=n, z80=z80, title=zi['title'], units=units, kills=time if time else kills, mix=mix, count=set(count), time=bool(time),
-             art=list(art), units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'))
+             art=list(art), snipers=snipers, units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'))
     if time: z['text'] = ['TIME ATTACK !', 'SURVIVE %d S.' % time]
     else:
-        noun = {(1,): 'SOLDIERS', (2,): 'OFFICERS', (3,): 'GENERALS', (6,): 'GRENADIERS'}.get(tuple(sorted(count)), 'ENEMIES')
+        noun = {(1,): 'SOLDIERS', (2,): 'OFFICERS', (3,): 'GENERALS', (6,): 'GRENADIERS', (7,): 'SNIPERS'}.get(tuple(sorted(count)), 'ENEMIES')
         z['text'] = ['KILL %d %s.' % (kills, noun)]
     if text: z['text'] = text
     return z
@@ -328,6 +333,11 @@ ZONES = [
        art=[dict(unit=1, x=16, y=148, walk=True), dict(unit=1, x=26, y=148, walk=True),
             dict(png='WarTruck_24x96.png', fw=24, fh=24, frames=1, flip=True, x=34, y=136, walk=True),
             dict(unit=1, x=48, y=148, walk=True), dict(unit=1, x=58, y=148, walk=True)]),
+    # Zone 5 "Helmuts Bunker" (cahier des charges de la zone 5) : 'units' = unites maxi a l'ecran, snipers compris (snipers = nombre de trous utilises, parmi les 4 de la carte) ;
+    #   le pourcentage porte sur les autres unites.  La mission finale (Boss Helmut) viendra apres.
+    _m(1, 7, [(1, 40), (6, 60)], kills=20, count=(6,), zn=5, snipers=2),
+    _m(2, 8, [(1, 40), (6, 60)], time=35, zn=5, snipers=3),
+    _m(3, 9, [(1, 50), (6, 50)], kills=15, count=(7,), zn=5, snipers=4),
     # Images supplementaires de l'ecran de mission (boss, batiments...) : ajouter a _m(...) un argument  art=[...]  (et show_units=False pour ne pas afficher les ennemis) dont chaque element est
     #   dict(png='Boss.png', fw=36, fh=36, frames=4, x=30, y=110, walk=True)   image(s) cote a cote, fw x fh pixels (paire, 80 pixels maxi), 1, 2 ou 4 images
     #   dict(tiles=[[8, 9, 10], [12, 13, 14]], x=4, y=110)                       bloc de tuiles du decor (12 x 8 pixels), numeros du TileSet
@@ -340,7 +350,7 @@ if os.environ.get('PAPI_TEST_GREN'):           # essai : la mission 1 devient 't
  
 for _i, _z in enumerate(ZONES): _z['name'] = 'zone%02d' % (_i + 1)       # noms de fichiers uniques (le numero de mission recommence a 1 a chaque zone)
 ZSTART = [min(i for i, z in enumerate(ZONES) if z['zn'] == k) for k in sorted(ZINFO)]          # premiere mission de chaque zone
-for _k in ZINFO: assert sum(1 for z in ZONES if z['zn'] == _k) >= (4 if _k == 4 else 5), "chaque zone doit avoir au moins 5 missions (4 pour la zone 4 : touches secretes 1 a 6)"
+for _k in ZINFO: assert sum(1 for z in ZONES if z['zn'] == _k) >= (4 if _k == 4 else 3 if _k == 5 else 5), "chaque zone doit avoir au moins 5 missions (4 pour la zone 4 : touches secretes 1 a 6)"
 
 # jingle "ZONE CLEAR !" (assets/ZoneClear.wav, analyse du WAV) : 64 images de 20 ms, une hauteur par image sur un canal du AY.
 # Introduction 0-280 ms (270 Hz qui descend a 185 Hz), puis 4 glissandos montants (x1,166 par image : 185 Hz -> ~1 kHz).
@@ -457,14 +467,15 @@ def load_water(name):
     return [[PENS.index(WATER_FW[px[x, y]]) for x in range(w)] for y in range(h)]
 
 def build_zone(z):
+    nsn = z.get('snipers', 0); units = z['units']
     ts_name, nts = _stack(z['tileset'], z['name'] + '_ts'), len(z['tileset']) if isinstance(z['tileset'], list) else 1
     ob_name = _stack(z['obstacle'], z['name'] + '_ob')
     a = Image.open(os.path.join(A, ts_name)).convert('RGB')
     b = Image.open(os.path.join(A, ob_name)).convert('RGB')
     KIND = {(0, 128, 0): 0x00, (255, 0, 0): 0x03, (0, 128, 255): 0x01, (255, 255, 0): 0x80, (128, 0, 255): 0x07,    # violet : obstacle normal (bits 0-1 comme le rouge) mais pas un abri (bit 2), sortie des casernes
-            (255, 0, 210): 0x08, (255, 255, 255): 0x17}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
-    PURPLE = (128, 0, 255)
-    tpurple = set(); twater = set()
+            (255, 0, 210): 0x08, (255, 255, 255): 0x17, (128, 0, 0): 0x00}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
+    PURPLE = (128, 0, 255); HOLE = (128, 0, 0)                  # marron : trou de sniper (case libre : seule sa position compte)
+    tpurple = set(); twater = set(); tholes = set()
     tiles_img = load(ts_name)
     tkind = []
     for t in range(40 * nts):
@@ -476,6 +487,7 @@ def build_zone(z):
                 if pb != a.getpixel((tx + x, ty + y)) and pb in KIND:
                     k = KIND[pb]
                     if pb == PURPLE: tpurple.add(t)
+                    if pb == HOLE: tholes.add(t)
                     if k == 0x08: twater.add(t)
         tkind.append(k)
     wframes = None
@@ -526,6 +538,11 @@ def build_zone(z):
     assert 1 <= len(spawns) <= (15 if z.get('flame') else 16)
     nspawn = len(spawns)
     spawns += [spawns[i % nspawn] for i in range(16 - nspawn)]
+    if nsn:                                            # trous de sniper : le sniper de la place i prend le point d'apparition 15 - i (octets : x, y du sprite 6 x 12, pose sur le bas de la case du trou)
+        holes = [(c * 6, 8 * r - 4) for r in range(24) for c in range(13) if tmap[r][c] in tholes]
+        assert len(holes) >= nsn and nspawn <= 16 - units, 'zone %s : %d trous pour %d snipers (%d points d apparition)' % (z['name'], len(holes), nsn, nspawn)
+        pick = [0] if nsn == 1 else [round(j * (len(holes) - 1) / (nsn - 1)) for j in range(nsn)]
+        for j, h_ in enumerate(pick): spawns[15 - (units - nsn + j)] = holes[h_]
     used = sorted({t for row in tmap for t in row})
     assert len(used) <= 40
     remap = {t: i for i, t in enumerate(used)}
@@ -534,10 +551,11 @@ def build_zone(z):
     #   (boss : ses deux places d'abord, puis la garde)
     units = z['units']; mix = sorted(z['mix']); assert sum(p for _, p in mix) == 100 and units <= 12
     boss = z.get('boss'); veh = z.get('veh', 0); nb = 2 if (boss or veh >= 2) else 0
-    ng = units - nb
+    # snipers : places a part, en fin de liste (un trou chacun) ; le pourcentage porte sur les autres
+    ng = units - nb - nsn
     cnt = {t: (ng * p + 50) // 100 for t, p in mix[1:]}
     cnt[mix[0][0]] = ng - sum(cnt.values())
-    slot_types = ([4, 5] if boss else [mix[0][0]] * 2 if veh >= 2 else []) + [t for t, _ in mix for _ in range(cnt[t])]
+    slot_types = ([4, 5] if boss else [mix[0][0]] * 2 if veh >= 2 else []) + [t for t, _ in mix for _ in range(cnt[t])] + [7] * nsn
     assert len(slot_types) == units
     def uk(t):             # fiche du type t ; le boss de la zone peut avoir sa planche et sa vitesse (cle 'boss')
         u = UNITS[t]
@@ -549,7 +567,7 @@ def build_zone(z):
         key = tuple(d)
         if key not in index: index[key] = len(uniq); uniq.append(d)
         return slot_addr(SLOT0_ZONE + index[key])
-    for t in [t for t, _ in mix] + ([4, 5] if boss else []):
+    for t in [t for t, _ in mix] + ([4, 5] if boss else []) + ([7] if nsn else []):
         u = uk(t); g = load(u['sheet']); ptrs = []
         for fr in range(36):
             if 'half' in u:                  # boss : planche de 12 x 24 ; moitie haute (tete) ou basse (corps)
@@ -599,7 +617,7 @@ def build_zone(z):
     # bit 2 de la fiche : cette place compte pour le quota (les types a abattre) ; Time Attack : aucune
     for s_ in range(12): hdr[16 + 12 * 5 + s_] |= 4 if (not z.get('time') and ext[s_] in z['count']) else 0
     # tir en couverture : une part des unites (officiers compris), reparties dans la liste ; bit 1 de la fiche 'gren'
-    cands = [s_ for s_ in range(nb, units) if slot_types[s_] != 6]      # le grenadier ne se met pas a couvert
+    cands = [s_ for s_ in range(nb, units) if slot_types[s_] not in (6, 7)]      # le grenadier et le sniper ne se mettent pas a couvert
     ncov = (len(cands) * z.get('cover', 0) + 50) // 100
     cov = [cands[int((i + 0.5) * len(cands) / ncov)] for i in range(ncov)] if ncov and cands else []
     if boss: cov.append(0)                              # le boss sait tirer a couvert (comme le soldat)
@@ -613,7 +631,8 @@ def build_zone(z):
     assert len(zb) == Z_TKIND; zb += bytes(tkind[t] for t in used) + bytes(40 - len(used))
     assert len(zb) == Z_FRAMES
     if boss and any(t == 3 for t, _ in mix): assert all(t == 3 for t, _ in mix), 'boss + generaux : garde 100 % generaux'      # leurs images prennent la place de la table des soldats (la table des generals sert au corps du boss)
-    order = ((3 if any(t == 3 for t, _ in mix) else 1), 2, 4, 5, 0) if boss else (1, 2, 3, 6, 0)      # boss : son corps prend la place de la table des generals (le moteur ne les distingue pas) ; la tete suit
+    assert not (nsn and any(t == 2 for t, _ in mix)), 'sniper + officiers : la table d images des officiers sert au sniper'
+    order = ((3 if any(t == 3 for t, _ in mix) else 1), 2, 4, 5, 0) if boss else (1, 7 if nsn else 2, 3, 6, 0)      # boss : son corps prend la place de la table des generals (le moteur ne les distingue pas) ; la tete suit
     for t in order:
         for p in tables.get(t, [0] * 36): zb += bytes([p & 255, p >> 8])
     assert len(zb) == Z_TILES
@@ -730,7 +749,7 @@ def build_voice():
 os.makedirs(os.path.join(ROOT, 'build'), exist_ok=True)
 VOICE_LEN = build_voice()
 TRUCK_OFF = VOICE_OFF + VOICE_LEN   # images des camions : apres la voix (banque 7)
-BOSS_N = 17                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
+BOSS_N = 18                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
 BOSS_PAD = 0x4000 - BOSS_N * 512                      # elle est lue en BOSS_LOAD + BOSS_PAD (derniers 8 Ko de la fenetre) puis decompressee sur place
 
 def build_trucks():
@@ -782,7 +801,7 @@ def build_hof(title_rows):
                 db(f, [red if (r[x] and r[x + 1]) else (enc(2, 0) if r[x] else (enc(0, 2) if r[x + 1] else 0)) for x in range(0, w, 2)], 16)
 
 # ---------------------------------------------------------------- ecrans de mission (overlay)
-ACCESS = {2: 'FONZIE', 3: 'MAMIE', 4: 'SUGAR'}      # codes d'acces des zones (numero de zone -> code), saisis dans le menu (ACCESS CODE)
+ACCESS = {2: 'FONZIE', 3: 'MAMIE', 4: 'SUGAR', 5: 'BASIC'}      # codes d'acces des zones (numero de zone -> code), saisis dans le menu (ACCESS CODE)
 def build_access():
     with open(os.path.join(ROOT, 'src', 'access.inc'), 'w') as f:
         f.write('; --- genere par tools/convert.py : codes d acces : numero de zone, code, 0 ; fin : 0 ---\naccess_tab:\n')
@@ -859,7 +878,7 @@ def intro_items():
     global _ITEMS
     if _ITEMS: return _ITEMS
     blobs, per = [], []
-    unit_png = {1: 'SoldatC++_12x12.png', 2: 'OfficierC___12x12.png', 3: 'GeneralC___12x12.png', 6: 'GrenadierC___12x12.png'}
+    unit_png = {1: 'SoldatC++_12x12.png', 2: 'OfficierC___12x12.png', 3: 'GeneralC___12x12.png', 6: 'GrenadierC___12x12.png', 7: 'SniperC___12x12.png'}
     for t, nm in unit_png.items():
         d, w, h = _png_frames(nm, 12, 12, 4)
         blobs.append(('intro_unit%d' % t, d))
