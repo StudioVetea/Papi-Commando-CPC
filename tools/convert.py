@@ -335,8 +335,8 @@ ZONES = [
     # les images fixes passent devant ; show_units=False supprime les ennemis automatiques. Chaque image fait grossir l'overlay (INTRO_N automatique).
 
 ]
-if os.environ.get('PAPI_TEST_GREN'):           # essai : la mission 1 devient 'tuer 15 grenadiers' (RUN"PAPICPC", touche + du menu de test)
-    ZONES[0] = _m(1, 5, [(1, 40), (6, 60)], kills=15, count=(6,))
+if os.environ.get('PAPI_TEST_GREN'):           # essai : la mission 1 devient 'tuer 15 ennemis : 60% soldats, 20% officiers, 20% grenadiers' (RUN"PAPICPC", touche + du menu de test)
+    ZONES[0] = _m(1, 5, [(1, 60), (2, 20), (6, 20)], kills=15, count=(1, 2, 6))
  
 for _i, _z in enumerate(ZONES): _z['name'] = 'zone%02d' % (_i + 1)       # noms de fichiers uniques (le numero de mission recommence a 1 a chaque zone)
 ZSTART = [min(i for i, z in enumerate(ZONES) if z['zn'] == k) for k in sorted(ZINFO)]          # premiere mission de chaque zone
