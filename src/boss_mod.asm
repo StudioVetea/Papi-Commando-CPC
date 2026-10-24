@@ -588,7 +588,7 @@ gr_dist:
 
 
 ;------------------------------------------------------------------------------
-; SNIPER C++ (classe 7) : immobile dans son trou (sa position : spawn_tab[15 - numero de place], ecrite par convert.py).
+; SNIPER C++ (classe 7) : immobile dans son trou (trou tire au hasard a chaque sortie : sn_pick, liste ecrite par convert.py).
 ;   E_STATE : 0 cache (E_TICK:E_TIMER = delai de 3 a 10 s avant la prochaine sortie), 3 sorti mais intouchable, 1 sorti et touchable (balles et grenade).
 ;   E_DX = phase : 0 sortie (4 images de 8 images : touchable des la 3e), 1 vise Papi (5 s au plus, un tir toutes les 2 s, bas / bas droite / bas gauche),
 ;   2 rentre dans son trou (4 images : touchable pendant les 2 premieres). E_TICK = images ecoulees dans la phase. E_DIR = direction du tir (2, 4 ou 5).
@@ -621,24 +621,59 @@ sn_rearm:   call rand                   ; prochaine sortie : 150 a 500 images (3
             xor a
             ret
 
+; choisit un trou libre au hasard (liste dans spawn_tab, indices spawn_n a 14, x = #FF : vide) ; ecrit E_X, E_Y ; IX, IY conserves ; 16 essais
+sn_pick:    ld b,16
+.t          push bc
+            call rand
+            and 15
+            ld hl,spawn_n
+            cp (hl)
+            jr c,.nx
+            cp 15
+            jr nc,.nx
+            add a,a
+            ld e,a
+            ld d,0
+            ld hl,spawn_tab
+            add hl,de
+            ld a,(hl)
+            inc hl
+            ld l,(hl)
+            ld h,a                      ; H = x, L = y
+            inc a
+            jr z,.nx
+            push iy
+            ld iy,enemies
+            ld de,ESIZE
+            ld b,MAXENEMY
+.o          ld a,(iy+E_STATE)
+            or a
+            jr z,.on
+            ld a,(iy+E_X)
+            cp h
+            jr nz,.on
+            ld a,(iy+E_Y)
+            cp l
+            jr z,.occ
+.on         add iy,de
+            djnz .o
+            pop iy
+            ld (ix+E_X),h
+            ld (ix+E_Y),l
+            pop bc
+            ret
+.occ        pop iy
+.nx         pop bc
+            djnz .t
+            ret
+
 sn_mod:     ld a,(ix+E_STATE)
             or a
             jp nz,.vis
             ld a,(ix+E_X)
             or a
             jr nz,.cd
-            call sn_slot                ; premier passage : il prend la place de son trou, puis attend
-            ld a,e
-            add a,a
-            ld e,a
-            ld hl,spawn_tab+30
-            or a
-            sbc hl,de
-            ld a,(hl)
-            ld (ix+E_X),a
-            inc hl
-            ld a,(hl)
-            ld (ix+E_Y),a
+            call sn_pick                ; premier passage : il prend un trou au hasard, puis attend
             jp sn_rearm
 .cd         ld a,(en_dt)
             ld c,a
@@ -658,7 +693,8 @@ sn_mod:     ld a,(ix+E_STATE)
             dec (ix+E_TICK)
             xor a
             ret
-.go         ld a,(ix+E_Y)               ; Papi doit etre en dessous de lui, sinon il reste cache : nouvel essai dans 30 images
+.go         call sn_pick                ; trou au hasard parmi les trous libres
+            ld a,(ix+E_Y)               ; Papi doit etre en dessous de lui, sinon il reste cache : nouvel essai dans 30 images
             add a,6
             ld hl,p_y
             cp (hl)

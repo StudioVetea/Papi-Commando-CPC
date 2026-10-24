@@ -137,7 +137,7 @@ PBUL_SPEED  equ 179             ; balles de Papi : 179/256 = 70 % des images (10
 PSPEED_X    equ 90              ; Papi : cumul horizontal 90/256 = 0,35 octet par image (17,5 octets/s ; 25 avant)
 PSPEED_Y    equ 179             ; Papi : cumul vertical 179/256 = 0,7 ligne par image (35 lignes/s ; 50 avant)
 B_ACC       equ 7               ; balles ennemies : cumul de vitesse (voir EBUL_SPEED)
-SBUL_SPEED  equ 134             ; balles du sniper : 75 % de PBUL_SPEED (179), avec le pas entier
+SBUL_SPEED  equ 121             ; balles du sniper : 67,5 % de PBUL_SPEED (75 % puis -10 %), avec le pas entier
 EBUL_SPEED  equ 131             ; balles ennemies : elles avancent 131 images sur 256 (154 avant : -15 %) d'un pas moitie
                                 ; moins long (shot_tab / 2) : 15 x pas/s au lieu de 25 x pas/s = 60 % de la v03b
 
@@ -1483,7 +1483,7 @@ bullet_start:
 
 ; portee des balles, en pas (une balle de Papi fait 4 px de large / 6 de haut par pas, celles des ennemis la moitie) :
 ; Papi 76 px, soldat 68, officier 76, general 85, boss 94 (cahier du 20/10 moins 15 %), vehicule infinie.  Par classe : pas horizontaux, pas verticaux ou diagonaux
-rng_tab:    db 19,13, 34,23, 38,25, 42,28, 47,31, 255,255, 254,254, 254,254       ; (classes 6 et 7 : le sniper, portee quasi illimitee ; 254 : sa balle va a la vitesse de Papi)
+rng_tab:    db 21,14, 34,23, 38,25, 42,28, 47,31, 255,255, 254,254, 254,254       ; (classes 6 et 7 : le sniper, portee quasi illimitee ; 254 : sa balle va a la vitesse de Papi)
 
 ; tir en couverture de Papi : A = direction, H = x, L = y du tireur, IX = balle qui vient de partir.
 ; Si la case JUSTE a cote de son corps, dans la direction du tir, est un mur rouge (il est colle a l'obstacle),

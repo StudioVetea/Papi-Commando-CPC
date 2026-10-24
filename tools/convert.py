@@ -538,11 +538,10 @@ def build_zone(z):
     assert 1 <= len(spawns) <= (15 if z.get('flame') else 16)
     nspawn = len(spawns)
     spawns += [spawns[i % nspawn] for i in range(16 - nspawn)]
-    if nsn:                                            # trous de sniper : le sniper de la place i prend le point d'apparition 15 - i (octets : x, y du sprite 6 x 12, pose sur le bas de la case du trou)
+    if nsn:                                            # trous de sniper : la liste des trous suit les points d'apparition (indices nspawn..14), #FF = vide ; chaque sniper en choisit un au hasard a chaque sortie (sn_pick)
         holes = [(c * 6, 8 * r - 4) for r in range(24) for c in range(13) if tmap[r][c] in tholes]
-        assert len(holes) >= nsn and nspawn <= 16 - units, 'zone %s : %d trous pour %d snipers (%d points d apparition)' % (z['name'], len(holes), nsn, nspawn)
-        pick = [0] if nsn == 1 else [round(j * (len(holes) - 1) / (nsn - 1)) for j in range(nsn)]
-        for j, h_ in enumerate(pick): spawns[15 - (units - nsn + j)] = holes[h_]
+        assert len(holes) >= nsn and nspawn + len(holes) <= 15, 'zone %s : %d trous pour %d snipers (%d points d apparition)' % (z['name'], len(holes), nsn, nspawn)
+        spawns = spawns[:nspawn] + holes + [(255, 0)] * (16 - nspawn - len(holes))
     used = sorted({t for row in tmap for t in row})
     assert len(used) <= 40
     remap = {t: i for i, t in enumerate(used)}
