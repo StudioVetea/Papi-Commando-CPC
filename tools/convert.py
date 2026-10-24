@@ -342,9 +342,9 @@ ZONES = [
     #   sa garde : 3 grenadiers + 2 snipers (la table d'images des grenadiers prend la place de celle des soldats)
     _m(4, 7, [(6, 100)], kills=45, zn=5, snipers=2, barrels=1, show_units=False, text=['KILL BOSS', 'HELMUT !'],
        boss=dict(hp=45, sheet='BossHelmut_12x24.png', spd=0, burst=3, delay=140, pts=75, helmut=1, xr=(18, 54)),
-       art=[dict(unit=1, x=26, y=148, walk=True),
+       art=[dict(unit=6, x=26, y=148, walk=True),
             dict(png='BossHelmut_12x24.png', fw=12, fh=24, frames=4, x=36, y=136, walk=True),
-            dict(unit=1, x=46, y=148, walk=True)]),
+            dict(unit=6, x=46, y=148, walk=True)]),
     # Images supplementaires de l'ecran de mission (boss, batiments...) : ajouter a _m(...) un argument  art=[...]  (et show_units=False pour ne pas afficher les ennemis) dont chaque element est
     #   dict(png='Boss.png', fw=36, fh=36, frames=4, x=30, y=110, walk=True)   image(s) cote a cote, fw x fh pixels (paire, 80 pixels maxi), 1, 2 ou 4 images
     #   dict(tiles=[[8, 9, 10], [12, 13, 14]], x=4, y=110)                       bloc de tuiles du decor (12 x 8 pixels), numeros du TileSet

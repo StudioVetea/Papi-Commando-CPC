@@ -723,6 +723,9 @@ hm_mod:     ld a,ixl
             ld (ix+E_OX),a
             ld (ix+E_LAST),a
             ld (ix+E_STATE),1
+            xor a                       ; (les clignotements de la mission precedente ne doivent pas le rendre blanc)
+            ld (slot_flash),a
+            ld (slot_flash+1),a
             ld a,60                     ; premiere rafale 1,2 s apres l'arrivee
             ld (b_cd),a
             jp .fl0

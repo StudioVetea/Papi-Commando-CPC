@@ -357,11 +357,11 @@ intro_it21: db 3
  dw intro_unit7,72
  db 6,12,3,46,116,1,7
 intro_it22: db 3
- dw intro_unit1,72
+ dw intro_unit6,72
  db 6,12,3,26,148,1,27
  dw intro_art22_1,144
  db 6,24,3,36,136,1,17
- dw intro_unit1,72
+ dw intro_unit6,72
  db 6,12,3,46,148,1,7
 intro_unit1:
  db #00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#C3,#41
