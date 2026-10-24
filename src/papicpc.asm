@@ -4437,8 +4437,8 @@ put_glyph:
 
 font_chars: db '0123456789 ACEGIMNOPRSVUTFLD-HKZ!.Y+BQW'
 font_count  equ 39
-txt_hud:    db 'SCORE      HI         ',4,'  ',1,'    '
-hud_tile:   db 2,0   ; glyphes de 2 octets : SCORE x=0 chiffres x=12 / HI x=22 chiffres x=28 / coeur (tuile, 4 octets) x=44 vies x=48 / grenade (tuile) x=52 grenades x=57 / tuile mission x=64 ennemis restant x=69
+txt_hud:    db 'SCORE       HI        ',4,'  ',1,'    '
+hud_tile:   db 2,0   ; glyphes de 2 octets : SCORE x=0 chiffres x=12 (5) / HI x=24 chiffres x=30 (5) / coeur (tuile, 4 octets) x=44 vies x=48 / grenade (tuile) x=52 grenades x=57 / tuile mission x=64 ennemis restant x=69
 txt_over:   db 'GAME OVER !',0
 txt_win:    db 'MISSION DONE !',0
 
@@ -4453,14 +4453,13 @@ add_score:
             ld a,l
             cp lo(score-1)
             jr nz,add_score
-.done       ld a,(score)                ; le score est limite a 4 chiffres (9990 au plus) : on plafonne
-            ld hl,score+1
-            or (hl)
+.done       ld a,(score)                ; le score est limite a 5 chiffres affiches (99990 au plus) : on plafonne
+            or a
             jr z,.ok4
             ld hl,score
             ld (hl),0
             inc hl
-            ld (hl),0
+            ld (hl),9
             inc hl
             ld (hl),9
             inc hl
@@ -4581,7 +4580,7 @@ hud_update:
             jr z,.nohi
             res 3,(hl)
             ld hl,hiscore
-            ld bc,#1CC1                 ; x = 28
+            ld bc,#1EC1                 ; x = 30
             jr hud_number
 .nohi       bit 0,a
             jr z,.h1
@@ -4625,9 +4624,8 @@ hud_z80:    ld a,10                     ; (espace) : un seul chiffre, a droite
 
 ; HL = 5 chiffres, BC = position : 5 chiffres + un zero fixe (le score va de 10 en 10)
 hud_number:
-            inc hl                      ; 4 chiffres affiches (3 + le zero fixe) : on saute les deux premiers du score
-            inc hl
-            ld d,3
+            inc hl                      ; 5 chiffres affiches (4 + le zero fixe) : on saute le premier du score
+            ld d,4
 .sc         ld a,(hl)
             inc hl
             push hl
