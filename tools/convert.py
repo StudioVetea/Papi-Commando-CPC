@@ -338,6 +338,13 @@ ZONES = [
     _m(1, 7, [(1, 40), (6, 60)], kills=20, count=(6,), zn=5, snipers=2, barrels=1),
     _m(2, 8, [(1, 40), (6, 60)], time=35, zn=5, snipers=3, barrels=1),
     _m(3, 9, [(1, 50), (6, 50)], kills=15, count=(7,), zn=5, snipers=4, barrels=1),
+    # Mission finale : Boss Helmut (45 PV, 750 points) : va-et-vient dans la fenetre du bunker (tuiles bleu clair, x 18 a 54), rafales de 3 balles vers le bas toutes les 3 s ;
+    #   sa garde : 3 soldats + 2 snipers (pas de grenadiers : leur table d'images est celle de la tete du boss)
+    _m(4, 7, [(1, 100)], kills=45, zn=5, snipers=2, barrels=1, show_units=False, text=['KILL BOSS', 'HELMUT !'],
+       boss=dict(hp=45, sheet='BossHelmut_12x24.png', spd=0, burst=3, delay=140, pts=75, helmut=1, xr=(18, 54)),
+       art=[dict(unit=1, x=26, y=148, walk=True),
+            dict(png='BossHelmut_12x24.png', fw=12, fh=24, frames=4, x=36, y=136, walk=True),
+            dict(unit=1, x=46, y=148, walk=True)]),
     # Images supplementaires de l'ecran de mission (boss, batiments...) : ajouter a _m(...) un argument  art=[...]  (et show_units=False pour ne pas afficher les ennemis) dont chaque element est
     #   dict(png='Boss.png', fw=36, fh=36, frames=4, x=30, y=110, walk=True)   image(s) cote a cote, fw x fh pixels (paire, 80 pixels maxi), 1, 2 ou 4 images
     #   dict(tiles=[[8, 9, 10], [12, 13, 14]], x=4, y=110)                       bloc de tuiles du decor (12 x 8 pixels), numeros du TileSet
@@ -559,6 +566,7 @@ def build_zone(z):
     def uk(t):             # fiche du type t ; le boss de la zone peut avoir sa planche et sa vitesse (cle 'boss')
         u = UNITS[t]
         if boss and t in (4, 5): u = dict(u, sheet=boss.get('sheet', u['sheet']), spd=boss.get('spd', u['spd']))
+        if boss and boss.get('helmut') and t in (4, 5): u = dict(u, cls=7)      # Helmut : ses deux places passent par le module du sniper (banque 7 : hm_mod)
         return u
     # sprites des unites : images identiques gardees une seule fois, emplacements a partir de SLOT0_ZONE
     uniq, index, tables = [], {}, {}
@@ -598,6 +606,7 @@ def build_zone(z):
         hdr[11] = boss.get('pts', 25)   # points du boss / 10 (>= 50 : pas de grenade)
         cov = boss.get('cover', 500)                  # images a couvert avant de repartir vers Papi (octets 12, 13 : poids faible d'abord)
         hdr[12], hdr[13] = cov & 255, cov >> 8
+        if boss.get('helmut'): hdr[12], hdr[13] = boss['xr']       # Helmut : x mini et maxi de son va-et-vient (octets)
         hdr[14], hdr[15] = boss.get('burst', 3), boss.get('delay', 100)    # balles par rafale, images entre deux rafales
     if veh:                                            # vehicule : mode (1 camion de troupes + quota, 2 barre de vie + victoire normale, 3 barre de vie, rafales, fin de zone) ; seuils de la barre ; rafales du WarTruck
         hdr[95] = veh
@@ -632,7 +641,7 @@ def build_zone(z):
     assert len(zb) == Z_FRAMES
     if boss and any(t == 3 for t, _ in mix): assert all(t == 3 for t, _ in mix), 'boss + generaux : garde 100 % generaux'      # leurs images prennent la place de la table des soldats (la table des generals sert au corps du boss)
     assert not (nsn and any(t == 2 for t, _ in mix)), 'sniper + officiers : la table d images des officiers sert au sniper'
-    order = ((3 if any(t == 3 for t, _ in mix) else 1), 2, 4, 5, 0) if boss else (1, 7 if nsn else 2, 3, 6, 0)      # boss : son corps prend la place de la table des generals (le moteur ne les distingue pas) ; la tete suit
+    order = ((3 if any(t == 3 for t, _ in mix) else 1), 7 if nsn else 2, 4, 5, 0) if boss else (1, 7 if nsn else 2, 3, 6, 0)      # boss : son corps prend la place de la table des generals (le moteur ne les distingue pas) ; la tete suit
     for t in order:
         for p in tables.get(t, [0] * 36): zb += bytes([p & 255, p >> 8])
     assert len(zb) == Z_TILES
@@ -711,7 +720,7 @@ def build_menu():
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
 VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0x1100                     # la voix commence 4,3 Ko apres le debut de la banque 7 (code du boss, des vehicules, des officiers et des grenadiers)
+VOICE_OFF = 0x1200                     # la voix commence 4,3 Ko apres le debut de la banque 7 (code du boss, des vehicules, des officiers et des grenadiers)
 def build_voice():
     """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
     PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
@@ -749,7 +758,7 @@ def build_voice():
 os.makedirs(os.path.join(ROOT, 'build'), exist_ok=True)
 VOICE_LEN = build_voice()
 TRUCK_OFF = VOICE_OFF + VOICE_LEN   # images des camions : apres la voix (banque 7)
-BOSS_N = 18                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
+BOSS_N = 19                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
 BOSS_PAD = 0x4000 - BOSS_N * 512                      # elle est lue en BOSS_LOAD + BOSS_PAD (derniers 8 Ko de la fenetre) puis decompressee sur place
 
 def build_trucks():

@@ -66,3 +66,6 @@ zone_dir:
  db 32,2,9
  dw #6271
  db 0
+ db 33,2,8
+ dw #5D15
+ db 0

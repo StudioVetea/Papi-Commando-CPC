@@ -11,7 +11,7 @@ def extend(n):
     global sizes, off
     last = max(i for i, v in enumerate(sizes) if v)
     global ntr
-    maxtrk = int(os.environ.get('PAPI_MAXTRK', '44'))          # 44 pistes depuis la zone 5 (un lecteur CPC 3 pouces en lit 42) ; PAPI_MAXTRK=42 pour verifier la limite
+    maxtrk = int(os.environ.get('PAPI_MAXTRK', '46'))          # 44 pistes depuis la zone 5 (un lecteur CPC 3 pouces en lit 42) ; PAPI_MAXTRK=42 pour verifier la limite
     assert n < max(maxtrk, ntr * d[0x31]), 'la disquette depasse %d pistes' % max(maxtrk, ntr * d[0x31])
     if n >= ntr * d[0x31]:
         sizes += [0] * (n + 1 - len(sizes)); ntr = n + 1; d[0x30] = ntr

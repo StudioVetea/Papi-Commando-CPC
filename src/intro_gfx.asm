@@ -1,6 +1,6 @@
 ; --- genere par tools/convert.py : textes des ecrans de mission : x, y, couleur, texte ; x = 0 : fin ---
 intro_tab:
- dw intro_0,intro_1,intro_2,intro_3,intro_4,intro_5,intro_6,intro_7,intro_8,intro_9,intro_10,intro_11,intro_12,intro_13,intro_14,intro_15,intro_16,intro_17,intro_18,intro_19,intro_20,intro_21
+ dw intro_0,intro_1,intro_2,intro_3,intro_4,intro_5,intro_6,intro_7,intro_8,intro_9,intro_10,intro_11,intro_12,intro_13,intro_14,intro_15,intro_16,intro_17,intro_18,intro_19,intro_20,intro_21,intro_22
 intro_0:
  db 19,64,#F3,"MISSION 01",0
  db 5,96,#F3,"KILL 15 SOLDIERS.",0
@@ -99,6 +99,11 @@ intro_21:
  db 19,64,#F3,"MISSION 03",0
  db 7,96,#F3,"KILL 15 SNIPERS.",0
  db 0
+intro_22:
+ db 19,64,#F3,"MISSION 04",0
+ db 21,96,#F3,"KILL BOSS",0
+ db 23,116,#F3,"HELMUT !",0
+ db 0
 intro_title0:
  db 11,40,#CF,"HELMUTS BUNKER",0
  db 0
@@ -173,6 +178,7 @@ intro_missions:  ; mission : (nom de la zone, liste d images)
  dw intro_title0,intro_it19
  dw intro_title0,intro_it20
  dw intro_title0,intro_it21
+ dw intro_title0,intro_it22
 ; image : donnees (2), taille d une image (2), largeur en octets, hauteur en lignes, masque d images - 1, x final, y, drapeaux (bit 0 = arrive de la gauche, bit 1 = redessine a chaque image : decor devant les ennemis), retard
 intro_it0: db 3
  dw intro_unit1,72
@@ -350,6 +356,13 @@ intro_it21: db 3
  db 6,12,3,36,116,1,17
  dw intro_unit7,72
  db 6,12,3,46,116,1,7
+intro_it22: db 3
+ dw intro_unit1,72
+ db 6,12,3,26,148,1,27
+ dw intro_art22_1,144
+ db 6,24,3,36,136,1,17
+ dw intro_unit1,72
+ db 6,12,3,46,148,1,7
 intro_unit1:
  db #00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#C3,#41
  db #00,#00,#00,#40,#D3,#C3,#D3,#00,#41,#41,#D3,#41,#51,#00,#41,#C3
@@ -694,3 +707,40 @@ intro_art18_2:
  db #00,#00,#00,#00,#00,#A8,#54,#00,#00,#10,#30,#08,#80,#50,#A2,#F1
  db #54,#F3,#F3,#F6,#50,#A2,#5A,#00,#C0,#50,#A8,#F4,#00,#00,#00,#00
  db #50,#A8,#00,#80,#40,#80,#40,#00,#C0,#C0,#C0,#C0,#00,#40,#C0,#00
+intro_art22_1:
+ db #00,#00,#00,#00,#00,#00,#00,#03,#03,#03,#03,#00,#01,#03,#03,#8B
+ db #CF,#02,#53,#8B,#CF,#CF,#8B,#A3,#03,#CF,#8B,#CF,#CF,#CF,#CF,#43
+ db #C7,#CB,#C7,#8B,#CF,#00,#C3,#C2,#00,#CF,#CA,#F3,#41,#80,#F3,#C5
+ db #CB,#F3,#E3,#D1,#F3,#C7,#40,#A2,#E2,#D1,#51,#80,#41,#C0,#C1,#C0
+ db #C0,#82,#41,#C3,#D3,#E2,#C3,#82,#51,#D3,#C3,#C3,#E3,#A2,#40,#82
+ db #F3,#F3,#41,#80,#00,#C1,#00,#00,#C2,#00,#00,#40,#C3,#C3,#80,#00
+ db #54,#00,#54,#F9,#00,#A8,#00,#82,#A8,#F9,#41,#00,#00,#C3,#54,#F9
+ db #C3,#00,#00,#C1,#A8,#F9,#C2,#00,#00,#40,#54,#F9,#80,#00,#00,#00
+ db #A8,#54,#00,#00,#00,#00,#A8,#54,#00,#00,#00,#00,#54,#A8,#00,#00
+ db #00,#00,#00,#00,#00,#00,#00,#03,#03,#03,#03,#00,#01,#03,#03,#8B
+ db #CF,#02,#53,#8B,#CF,#CF,#8B,#A3,#03,#CF,#8B,#CF,#CF,#CF,#CF,#43
+ db #C7,#CB,#C7,#8B,#CF,#00,#C3,#C2,#00,#CF,#CA,#F3,#41,#80,#F3,#C5
+ db #CB,#F3,#E3,#D1,#F3,#C7,#40,#A2,#E2,#D1,#51,#80,#41,#C0,#C1,#C0
+ db #C0,#82,#41,#C3,#D3,#E2,#C3,#82,#51,#D3,#C3,#C3,#E3,#A2,#40,#82
+ db #F3,#F3,#41,#80,#00,#C1,#00,#00,#C2,#00,#00,#40,#C3,#C3,#80,#00
+ db #54,#00,#54,#F9,#00,#A8,#00,#82,#A8,#F9,#41,#00,#00,#C3,#54,#F9
+ db #C3,#00,#00,#C1,#A8,#F9,#C2,#00,#00,#40,#54,#F9,#80,#00,#00,#00
+ db #A8,#54,#00,#00,#00,#00,#A8,#54,#00,#00,#00,#00,#54,#A8,#00,#00
+ db #00,#00,#00,#00,#00,#00,#00,#03,#03,#03,#03,#00,#01,#03,#03,#8B
+ db #CF,#02,#53,#8B,#CF,#CF,#8B,#A3,#03,#CF,#8B,#CF,#CF,#CF,#CF,#43
+ db #C7,#CB,#C7,#8B,#CF,#41,#C3,#C3,#80,#CF,#CA,#A2,#C3,#C2,#51,#C5
+ db #CB,#F3,#41,#80,#F3,#C7,#40,#A2,#E2,#D1,#51,#80,#41,#C0,#C1,#C0
+ db #C0,#82,#41,#C3,#D3,#E2,#C3,#82,#51,#C3,#C3,#C3,#C3,#A2,#40,#82
+ db #F3,#F3,#41,#80,#00,#80,#00,#00,#40,#00,#00,#40,#F3,#F3,#80,#00
+ db #54,#00,#54,#F9,#00,#A8,#00,#82,#A8,#F9,#41,#00,#00,#C3,#54,#F9
+ db #C3,#00,#00,#C1,#A2,#F9,#C2,#00,#A2,#40,#54,#F9,#80,#51,#00,#00
+ db #A8,#54,#00,#00,#00,#A2,#A8,#54,#51,#00,#A2,#00,#54,#F9,#00,#51
+ db #00,#00,#00,#00,#00,#00,#00,#03,#03,#03,#03,#00,#01,#03,#03,#8B
+ db #CF,#02,#53,#8B,#CF,#CF,#8B,#A3,#03,#CF,#8B,#CF,#CF,#CF,#CF,#43
+ db #C7,#CB,#C7,#8B,#CF,#41,#C3,#C3,#80,#CF,#CA,#A2,#C3,#C2,#51,#C5
+ db #CB,#F3,#41,#80,#F3,#C7,#40,#A2,#E2,#D1,#51,#80,#41,#C0,#C1,#C0
+ db #C0,#82,#41,#C3,#D3,#E2,#C3,#82,#51,#C3,#C3,#C3,#C3,#A2,#40,#82
+ db #F3,#F3,#41,#80,#00,#80,#00,#00,#40,#00,#00,#40,#F3,#F3,#80,#00
+ db #54,#00,#54,#F9,#00,#A8,#00,#82,#A8,#F9,#41,#00,#00,#C3,#54,#F9
+ db #C3,#00,#00,#C1,#A2,#F9,#C2,#00,#A2,#40,#54,#F9,#80,#51,#00,#00
+ db #A8,#54,#00,#00,#00,#A2,#A8,#54,#51,#00,#A2,#00,#54,#F9,#00,#51

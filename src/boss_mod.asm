@@ -5,6 +5,10 @@
 ;==============================================================================
 ; appelee a chaque image (boucle principale) : rafales et grenades
 m_boss_tick:
+            ld a,(slot_gren)            ; Helmut (zone 5) : ses places sont de classe 7 (sniper) : son propre comportement
+            and #70
+            cp #70
+            jp z,hm_tick
             ld a,(enemies+E_STATE)      ; le corps est-il en jeu ?
             dec a
             ret nz
@@ -621,6 +625,191 @@ sn_rearm:   call rand                   ; prochaine sortie : 150 a 500 images (3
             xor a
             ret
 
+
+;------------------------------------------------------------------------------
+; BOSS HELMUT (zone 5, mission 4) : corps (place 0) et tete (place 1) de classe 7, comme le sniper (hook de enemies_update -> sn_run -> sn_mod -> hm_mod).
+;   Va-et-vient permanent dans la fenetre du bunker (x de bk_cov a bk_cov+1, y fixe), image 'passif' ou, apres chaque balle, image 'tire' (HM_FIRE images).
+;   Rafale de bk_nb balles vers le bas, toutes les 3 s, sans viser ; portee 120 pixels (20 pas), vitesse de la balle du sniper.  Il perd ses points de vie comme les autres boss (bk_dmg).
+;------------------------------------------------------------------------------
+HM_Y        equ 12                      ; y du corps (la tete est 12 lignes au-dessus)
+HM_STEP     equ 6                       ; images par octet de deplacement (8,3 octets/s)
+HM_FIRE     equ 24                      ; images pendant lesquelles l'image 'tire' reste affichee
+
+hm_tick:    ld a,(enemies+E_STATE)
+            dec a
+            ret nz
+            ld a,(p_state)              ; Papi touche ou en train d'entrer : compteurs geles
+            or a
+            ret nz
+            ld hl,b_gcd                 ; (ici : images restantes de l'image 'tire')
+            ld a,(hl)
+            or a
+            jr z,.n0
+            dec (hl)
+.n0         ld a,(b_n)
+            or a
+            jr nz,.inb
+            ld a,(b_cd)
+            or a
+            jr z,.go
+            dec a
+            ld (b_cd),a
+            ret
+.go         ld a,(bk_nb)
+            ld (b_n),a
+            xor a
+            ld (b_t),a
+            ld a,11                     ; Tir Boss : un seul son pour la rafale
+            call sfx
+.inb        ld a,(b_t)
+            or a
+            jr z,.shoot
+            dec a
+            ld (b_t),a
+            ret
+.shoot      ld a,BK_SPACE
+            ld (b_t),a
+            ld hl,b_n
+            dec (hl)
+            jr nz,.sh
+            ld a,(bk_dl)
+            ld (b_cd),a
+.sh         ld a,HM_FIRE
+            ld (b_gcd),a
+            ld a,(enemies+E_X)          ; une balle vers le bas (direction 2), classe de portee 7 : vitesse du sniper ; age de depart 234 : elle eclate au bout de 20 pas (254 - 234)
+            ld h,a
+            ld a,(enemies+E_Y)
+            ld l,a
+            ld a,7
+            ld (shot_cls),a
+            push ix
+            ld ix,bullets+4*BSIZE
+            ld bc,BSIZE
+            ld a,NBUL-4
+.find       ex af,af'
+            ld a,(ix+B_ON)
+            or a
+            jr z,.ok
+            add ix,bc
+            ex af,af'
+            dec a
+            jr nz,.find
+            pop ix
+            ret
+.ok         ld a,2
+            call bullet_start
+            jr nz,.nf
+            ld (ix+B_AGE),234
+.nf         pop ix
+            ret
+
+; Sortie : A = 0 rien a faire, 2 + n : dessiner l'image n (comme sn_mod)
+hm_mod:     ld a,ixl
+            or a
+            jr nz,.head
+            ld a,(ix+E_STATE)           ; --- le corps
+            or a
+            jr nz,.bd
+            ld a,(bk_cov)               ; il arrive : a gauche de son couloir
+            ld (ix+E_X),a
+            ld (ix+E_Y),HM_Y
+            xor a
+            ld (ix+E_DIR),a
+            ld (ix+E_TIMER),a
+            ld (ix+E_TICK),a
+            ld (b_n),a
+            ld a,#FF
+            ld (ix+E_OX),a
+            ld (ix+E_LAST),a
+            ld (ix+E_STATE),1
+            ld a,60                     ; premiere rafale 1,2 s apres l'arrivee
+            ld (b_cd),a
+            jr .fl0
+.bd         ld a,(en_dt)
+            add a,(ix+E_TIMER)
+            cp HM_STEP
+            jr c,.sv
+            sub HM_STEP
+            ld (ix+E_TIMER),a
+            ld a,(ix+E_X)
+            bit 0,(ix+E_DIR)
+            jr nz,.left
+            inc a
+            ld (ix+E_X),a
+            ld hl,bk_cov+1              ; x maxi : il repart a gauche
+            cp (hl)
+            jr c,.fl0
+            ld (ix+E_DIR),1
+            jr .fl0
+.left       dec a
+            ld (ix+E_X),a
+            ld hl,bk_cov                ; x mini : il repart a droite
+            cp (hl)
+            jr z,.lr
+            jr nc,.fl0
+.lr         ld (ix+E_DIR),0
+            jr .fl0
+.sv         ld (ix+E_TIMER),a
+            jr .fl0
+.head       ld a,(enemies+E_STATE)      ; --- la tete : colee 12 lignes au-dessus du corps
+            dec a
+            jr z,.hd0
+            xor a
+            ret
+.hd0        ld a,(ix+E_STATE)
+            or a
+            jr nz,.hd
+            ld (ix+E_STATE),1
+            ld a,#FF
+            ld (ix+E_OX),a
+            ld (ix+E_LAST),a
+.hd         ld a,(enemies+E_X)
+            ld (ix+E_X),a
+            ld a,(enemies+E_Y)
+            sub BK_HH
+            ld (ix+E_Y),a
+.fl0        call sn_slot                ; clignotement blanc (touche) : il se decompte
+            ld hl,slot_flash
+            add hl,de
+            ld a,(hl)
+            or a
+            jr z,.show
+            ld b,a
+            ld a,(en_dt)
+            ld c,a
+            ld a,b
+            sub c
+            jr z,.fe
+            jr nc,.fs
+.fe         xor a
+            ld (hl),a
+            ld (ix+E_LAST),#FF
+            jr .show
+.fs         ld (hl),a
+.show       ld a,(enemies+E_DIR)        ; image : direction x 4, +2 pendant l'image 'tire'
+            add a,a
+            add a,a
+            ld c,a
+            ld a,(b_gcd)
+            or a
+            ld a,c
+            jr z,.f1
+            add a,2
+.f1         ld c,a
+            cp (ix+E_LAST)
+            jr nz,.d
+            ld a,(ix+E_X)
+            cp (ix+E_OX)
+            jr nz,.d
+            ld a,(ix+E_Y)
+            cp (ix+E_OY)
+            jr nz,.d
+            xor a
+            ret
+.d          ld a,c
+            add a,2
+            ret
+
 ; choisit un trou libre au hasard (liste dans spawn_tab, indices spawn_n a 14, x = #FF : vide) ; ecrit E_X, E_Y ; IX, IY conserves ; 16 essais
 sn_pick:    ld b,16
 .t          push bc
@@ -667,7 +856,10 @@ sn_pick:    ld b,16
             djnz .t
             ret
 
-sn_mod:     ld a,(ix+E_STATE)
+sn_mod:     ld a,ixl
+            cp 32
+            jp c,hm_mod                 ; places 0 et 1 : le boss Helmut
+            ld a,(ix+E_STATE)
             or a
             jp nz,.vis
             ld a,(ix+E_X)
