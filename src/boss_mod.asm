@@ -632,7 +632,8 @@ sn_rearm:   call rand                   ; prochaine sortie : 150 a 500 images (3
 ;   Rafale de bk_nb balles vers le bas, toutes les 3 s, sans viser ; portee 120 pixels (20 pas), vitesse de la balle du sniper.  Il perd ses points de vie comme les autres boss (bk_dmg).
 ;------------------------------------------------------------------------------
 HM_Y        equ 12                      ; y du corps (la tete est 12 lignes au-dessus)
-HM_STEP     equ 6                       ; images par octet de deplacement (8,3 octets/s)
+HM_S0       equ 11                      ; vitesse de depart : 11 / 64 octet par image (8,6 octets/s) ; elle atteint 33 / 64 (3 fois plus) quand il ne lui reste plus de vie
+HM_HP       equ 45                      ; ses points de vie de depart (convert.py)
 HM_FIRE     equ 24                      ; images pendant lesquelles l'image 'tire' reste affichee
 
 hm_tick:    ld a,(enemies+E_STATE)
@@ -706,7 +707,7 @@ hm_tick:    ld a,(enemies+E_STATE)
 ; Sortie : A = 0 rien a faire, 2 + n : dessiner l'image n (comme sn_mod)
 hm_mod:     ld a,ixl
             or a
-            jr nz,.head
+            jp nz,.head
             ld a,(ix+E_STATE)           ; --- le corps
             or a
             jr nz,.bd
@@ -724,13 +725,27 @@ hm_mod:     ld a,ixl
             ld (ix+E_STATE),1
             ld a,60                     ; premiere rafale 1,2 s apres l'arrivee
             ld (b_cd),a
-            jr .fl0
-.bd         ld a,(en_dt)
-            add a,(ix+E_TIMER)
-            cp HM_STEP
+            jp .fl0
+.bd         ld a,(kills_left)           ; vitesse : de plus en plus vite quand ses points de vie baissent (cumul / 64 : HM_S0 au depart, +1 tous les 2 PV perdus)
+            neg
+            add a,HM_HP
+            jr c,.hp0
+            xor a
+.hp0        srl a
+            add a,HM_S0
+            ld c,a
+            ld a,(en_dt)
+            ld b,a
+            ld a,(ix+E_TIMER)
+.mu         add a,c
+            djnz .mu
+            cp 64
             jr c,.sv
-            sub HM_STEP
-            ld (ix+E_TIMER),a
+            sub 64
+            cp 64
+            jr c,.k
+            ld a,63
+.k          ld (ix+E_TIMER),a
             ld a,(ix+E_X)
             bit 0,(ix+E_DIR)
             jr nz,.left

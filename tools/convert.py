@@ -339,8 +339,8 @@ ZONES = [
     _m(2, 8, [(1, 40), (6, 60)], time=35, zn=5, snipers=3, barrels=1),
     _m(3, 9, [(1, 50), (6, 50)], kills=15, count=(7,), zn=5, snipers=4, barrels=1),
     # Mission finale : Boss Helmut (45 PV, 750 points) : va-et-vient dans la fenetre du bunker (tuiles bleu clair, x 18 a 54), rafales de 3 balles vers le bas toutes les 3 s ;
-    #   sa garde : 3 soldats + 2 snipers (pas de grenadiers : leur table d'images est celle de la tete du boss)
-    _m(4, 7, [(1, 100)], kills=45, zn=5, snipers=2, barrels=1, show_units=False, text=['KILL BOSS', 'HELMUT !'],
+    #   sa garde : 3 grenadiers + 2 snipers (la table d'images des grenadiers prend la place de celle des soldats)
+    _m(4, 7, [(6, 100)], kills=45, zn=5, snipers=2, barrels=1, show_units=False, text=['KILL BOSS', 'HELMUT !'],
        boss=dict(hp=45, sheet='BossHelmut_12x24.png', spd=0, burst=3, delay=140, pts=75, helmut=1, xr=(18, 54)),
        art=[dict(unit=1, x=26, y=148, walk=True),
             dict(png='BossHelmut_12x24.png', fw=12, fh=24, frames=4, x=36, y=136, walk=True),
@@ -621,7 +621,7 @@ def build_zone(z):
     ext = slot_types + [mix[0][0]] * (12 - units)      # places au-dela de la zone (essais avec plus d'ennemis) : comme le 1er type
     def arr(k, f):
         for s_ in range(12): hdr[16 + 12 * k + s_] = f(uk(ext[s_]))
-    arr(0, lambda u: 0); [hdr.__setitem__(16 + s_, (0 if (boss and ext[s_] == 3) else ext[s_] - 1)) for s_ in range(12)]                   # type 0..4
+    arr(0, lambda u: 0); [hdr.__setitem__(16 + s_, (0 if (boss and ext[s_] in (3, 6)) else ext[s_] - 1)) for s_ in range(12)]                   # type 0..4
     arr(1, lambda u: u['spd']); arr(2, lambda u: u['fire']); arr(3, lambda u: u['pts']); arr(4, lambda u: u['hp']); arr(5, lambda u: u['gren'] | (u['cls'] << 4))
     # bit 2 de la fiche : cette place compte pour le quota (les types a abattre) ; Time Attack : aucune
     for s_ in range(12): hdr[16 + 12 * 5 + s_] |= 4 if (not z.get('time') and ext[s_] in z['count']) else 0
@@ -641,7 +641,7 @@ def build_zone(z):
     assert len(zb) == Z_FRAMES
     if boss and any(t == 3 for t, _ in mix): assert all(t == 3 for t, _ in mix), 'boss + generaux : garde 100 % generaux'      # leurs images prennent la place de la table des soldats (la table des generals sert au corps du boss)
     assert not (nsn and any(t == 2 for t, _ in mix)), 'sniper + officiers : la table d images des officiers sert au sniper'
-    order = ((3 if any(t == 3 for t, _ in mix) else 1), 7 if nsn else 2, 4, 5, 0) if boss else (1, 7 if nsn else 2, 3, 6, 0)      # boss : son corps prend la place de la table des generals (le moteur ne les distingue pas) ; la tete suit
+    order = ((3 if any(t == 3 for t, _ in mix) else 6 if any(t == 6 for t, _ in mix) else 1), 7 if nsn else 2, 4, 5, 0) if boss else (1, 7 if nsn else 2, 3, 6, 0)      # boss : son corps prend la place de la table des generals (le moteur ne les distingue pas) ; la tete suit
     for t in order:
         for p in tables.get(t, [0] * 36): zb += bytes([p & 255, p >> 8])
     assert len(zb) == Z_TILES
