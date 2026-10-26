@@ -70,11 +70,11 @@ zone_dir:
  dw #5860
  db 0
  db 34,0,9
- dw #6287
+ dw #6275
  db 0
  db 35,0,9
- dw #6281
+ dw #626F
  db 0
  db 36,0,9
- dw #6282
+ dw #6270
  db 0

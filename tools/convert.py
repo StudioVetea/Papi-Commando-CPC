@@ -251,13 +251,13 @@ ZINFO = {1: dict(title='OUTPOST C-01', tmx='ZoneTest.tmx', tileset='TileSet1.png
                  gid0=117, flame='Flamme_3frames_12x8_Z4.png'),
          # zone 5 : 1 tileset (tuiles 157-196 dans le TMX) ; marron des obstacles = trou de sniper ; bleu clair = zone du boss (a venir, sans effet pour l'instant) ; les casernes (violet) font sortir les unites
          5: dict(title='HELMUTS BUNKER', tmx='Zone5.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn='auto', first=1, gid0=157, flame='Flamme_3frames_12x8_Z4.png'),
-         # zone 6 : meme tileset que la zone 5 ; pas de casernes : les ennemis sortent des deux cotes a mi-hauteur ; les snipers apparaissent au hasard sur les tuiles bleu clair (cyan)
-         6: dict(title='C++ BASE CAMP', tmx='Zone6.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn=[(0, 90), (12, 90)], first=1, gid0=157, flame='Flamme_3frames_12x8_Z4.png', cyan_snipers=1)}
+         # zone 6 : meme tileset que la zone 5 ; pas de casernes : les ennemis sortent des casernes (violet) et des deux cotes a mi-hauteur ; les snipers apparaissent au hasard sur les tuiles bleu clair (cyan) ET marron (trous)
+         6: dict(title='C++ BASE CAMP', tmx='Zone6.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn='auto', spawn_extra=[(0, 90), (12, 90)], first=1, gid0=157, flame='Flamme_3frames_12x8_Z4.png', cyan_snipers=1)}
 def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None, snipers=0, barrels=0):
     zi = ZINFO[zn]
     if veh >= 2: units += 2                     # vehicule a barre de vie : 2 places d'ennemi factices (0 et 1, jamais utilisees : elles font cesser les hooks du boss) + les unites transportees
     z = dict(name='zone%02d' % n, zn=zn, spawn_first=zi.get('first', 0), mnum=n, z80=z80, title=zi['title'], units=units, kills=time if time else kills, mix=mix, count=set(count), time=bool(time),
-             art=list(art), snipers=snipers, barrels=barrels, units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'), cyan_snipers=zi.get('cyan_snipers', 0))
+             art=list(art), snipers=snipers, barrels=barrels, units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'), cyan_snipers=zi.get('cyan_snipers', 0), spawn_extra=zi.get('spawn_extra', []))
     if time: z['text'] = ['TIME ATTACK !', 'SURVIVE %d S.' % time]
     else:
         noun = {(1,): 'SOLDIERS', (2,): 'OFFICERS', (3,): 'GENERALS', (6,): 'GRENADIERS', (7,): 'SNIPERS'}.get(tuple(sorted(count)), 'ENEMIES')
@@ -544,6 +544,7 @@ def build_zone(z):
             for c in range(13):
                 if tmap[r][c] in tpurple and tmap[r + 1][c] not in tpurple: z['spawn'].append((c, 8 * (r + 1) - 6))
         assert z['spawn'], 'carte sans tuile violette'
+        z['spawn'] += z.get('spawn_extra', [])          # points supplementaires (ex. zone 6 : les deux cotes a mi-hauteur)
     for c, y in z['spawn']:
         r = (y + 10) >> 3
         if z.get('veh'): spawns.append((c * 6, y)); continue
@@ -553,7 +554,7 @@ def build_zone(z):
     nspawn = len(spawns)
     spawns += [spawns[i % nspawn] for i in range(16 - nspawn)]
     if nsn:                                            # trous de sniper : la liste des trous suit les points d'apparition (indices nspawn..14), #FF = vide ; chaque sniper en choisit un au hasard a chaque sortie (sn_pick)
-        holes = [(c * 6, 8 * r - 4) for r in range(24) for c in range(13) if tmap[r][c] in (tcyan if z.get('cyan_snipers') else tholes)]
+        holes = [(c * 6, 8 * r - 4) for r in range(24) for c in range(13) if tmap[r][c] in ((tcyan | tholes) if z.get('cyan_snipers') else tholes)]
         assert len(holes) >= nsn and nspawn + len(holes) <= 15, 'zone %s : %d trous pour %d snipers (%d points d apparition)' % (z['name'], len(holes), nsn, nspawn)
         spawns = spawns[:nspawn] + holes + [(255, 0)] * (16 - nspawn - len(holes))
     used = sorted({t for row in tmap for t in row})
