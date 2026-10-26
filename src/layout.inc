@@ -21,7 +21,7 @@ MENU_TRK     equ 37
 MENU_N       equ 18
 MENU_LOAD    equ #5000
 INTRO_TRK    equ 39
-INTRO_N      equ 25
+INTRO_N      equ 26
 INTRO_LOAD   equ #4000
 GO_TRK       equ 42
 GO_N         equ 4

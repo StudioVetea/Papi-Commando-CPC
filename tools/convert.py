@@ -864,7 +864,17 @@ def intro_items():
     unit_png = {1: 'SoldatC++_12x12.png', 2: 'OfficierC___12x12.png', 3: 'GeneralC___12x12.png', 6: 'GrenadierC___12x12.png', 7: 'SniperC___12x12.png'}
     for t, nm in unit_png.items():
         d, w, h = _png_frames(nm, 12, 12, 4)
+        if t == 7:                                       # sniper : 8 images (ligne 1 : il sort du trou, ligne 2 : il y rentre), jouees en boucle sur place (pas de marche)
+            g = load(nm)
+            d = []
+            for fr in range(8):
+                r0, c0 = (fr // 4) * 12, (fr % 4) * 12
+                for y in range(12):
+                    for x in range(0, 12, 2): d.append(enc(g[r0 + y][c0 + x] or 0, g[r0 + y][c0 + x + 1] or 0))
         blobs.append(('intro_unit%d' % t, d))
+    def unit_it(t, x, y):
+        if t == 7: return dict(label='intro_unit7', fsize=72, w=6, h=12, nf=8, x=x, y=y, walk=False)
+        return dict(label='intro_unit%d' % t, fsize=72, w=6, h=12, nf=4, x=x, y=y, walk=True)
     for zi, z in enumerate(ZONES):
         ytxt = 96 + 20 * len(z['text'])                 # 1re ligne libre sous le texte
         its = []
@@ -873,11 +883,11 @@ def intro_items():
             if len(types) == 1: types = types * 3
             n = len(types)
             for i, t in enumerate(types):
-                its.append(dict(label='intro_unit%d' % t, fsize=72, w=6, h=12, nf=4, x=41 - 5 * n + 10 * i, y=ytxt, walk=True))
+                its.append(unit_it(t, 41 - 5 * n + 10 * i, ytxt))
         for ai, a in enumerate(z.get('art', [])):
             if 'unit' in a:                              # un ennemi deja en memoire (soldat 1, officier 2, general 3) : pas de donnees en plus
                 x = a['x'] if a.get('x') is not None else 36
-                its.append(dict(label='intro_unit%d' % a['unit'], fsize=72, w=6, h=12, nf=4, x=x, y=a['y'] if a.get('y') is not None else ytxt, walk=True)); continue
+                its.append(unit_it(a['unit'], x, a['y'] if a.get('y') is not None else ytxt)); continue
             if 'tiles' in a:
                 d, w, h = _tile_block(_stack(z['tileset'], z['name'] + '_ts'), a['tiles']); nf = 1
             else:

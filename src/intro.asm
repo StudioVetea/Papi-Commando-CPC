@@ -345,11 +345,13 @@ items_step: ld hl,(iv_u)
             ld hl,iv_n
             dec (hl)
             jr nz,.it
-.end        ld hl,iv_t                  ; (plafonne a 100 : x = t - retard doit rester positif quand l'image est arrivee)
+.end        ld hl,iv_t                  ; (de 96 a 127 en boucle : x = t - retard reste positif quand l'image est arrivee ; 32 images = un cycle complet de l'animation des snipers)
             ld a,(hl)
-            cp 100
-            ret nc
-            inc (hl)
+            inc a
+            cp 128
+            jr c,.sv
+            ld a,96
+.sv         ld (hl),a
             ret
 
 ; image de largeur sp_w (octets) x sp_h lignes (HL, donnees seules) en B = x (signe), C = y.  La colonne de gauche est noire :
