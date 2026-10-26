@@ -250,12 +250,14 @@ ZINFO = {1: dict(title='OUTPOST C-01', tmx='ZoneTest.tmx', tileset='TileSet1.png
          4: dict(title='THE LOST ROAD', tmx='Zone4.tmx', tileset='TileSet4.png', obstacle='TileSet4Obstacles.png', spawn='auto', first=1, water='Eau_3frames_12x8.png',
                  gid0=117, flame='Flamme_3frames_12x8_Z4.png'),
          # zone 5 : 1 tileset (tuiles 157-196 dans le TMX) ; marron des obstacles = trou de sniper ; bleu clair = zone du boss (a venir, sans effet pour l'instant) ; les casernes (violet) font sortir les unites
-         5: dict(title='HELMUTS BUNKER', tmx='Zone5.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn='auto', first=1, gid0=157, flame='Flamme_3frames_12x8_Z4.png')}
+         5: dict(title='HELMUTS BUNKER', tmx='Zone5.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn='auto', first=1, gid0=157, flame='Flamme_3frames_12x8_Z4.png'),
+         # zone 6 : meme tileset que la zone 5 ; pas de casernes : les ennemis sortent des deux cotes a mi-hauteur ; les snipers apparaissent au hasard sur les tuiles bleu clair (cyan)
+         6: dict(title='C++ BASE CAMP', tmx='Zone6.tmx', tileset='TileSet5.png', obstacle='TileSet5Obstacles.png', spawn=[(0, 90), (12, 90)], first=1, gid0=157, flame='Flamme_3frames_12x8_Z4.png', cyan_snipers=1)}
 def _m(n, units, mix, kills=None, count=(), time=None, art=(), show_units=True, boss=None, text=None, zn=1, z80=0, veh=0, hp=None, snipers=0, barrels=0):
     zi = ZINFO[zn]
     if veh >= 2: units += 2                     # vehicule a barre de vie : 2 places d'ennemi factices (0 et 1, jamais utilisees : elles font cesser les hooks du boss) + les unites transportees
     z = dict(name='zone%02d' % n, zn=zn, spawn_first=zi.get('first', 0), mnum=n, z80=z80, title=zi['title'], units=units, kills=time if time else kills, mix=mix, count=set(count), time=bool(time),
-             art=list(art), snipers=snipers, barrels=barrels, units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'))
+             art=list(art), snipers=snipers, barrels=barrels, units_shown=show_units, cover=25, spawn=zi['spawn'] or SPAWN_TEST, tmx=zi['tmx'], tileset=zi['tileset'], obstacle=zi['obstacle'], boss=boss, water=zi.get('water'), veh=veh, hp=hp, gid0=zi.get('gid0', 1), flame=zi.get('flame'), cyan_snipers=zi.get('cyan_snipers', 0))
     if time: z['text'] = ['TIME ATTACK !', 'SURVIVE %d S.' % time]
     else:
         noun = {(1,): 'SOLDIERS', (2,): 'OFFICERS', (3,): 'GENERALS', (6,): 'GRENADIERS', (7,): 'SNIPERS'}.get(tuple(sorted(count)), 'ENEMIES')
@@ -345,6 +347,10 @@ ZONES = [
        art=[dict(unit=6, x=26, y=148, walk=True),
             dict(png='BossHelmut_12x24.png', fw=12, fh=24, frames=4, x=36, y=136, walk=True),
             dict(unit=6, x=46, y=148, walk=True)]),
+    # Zone 6 "C++ Base Camp" (cahier des charges de la zone 6) : bidons explosifs, snipers sur les tuiles bleu clair ; la mission finale (Boss GazoKu) viendra apres
+    _m(1, 7, [(1, 50), (6, 50)], kills=15, count=(7,), zn=6, snipers=5, barrels=1),
+    _m(2, 8, [(1, 40), (6, 60)], time=40, zn=6, snipers=4, barrels=1),
+    _m(3, 9, [(1, 40), (6, 60)], kills=25, count=(6,), zn=6, snipers=5, barrels=1),
     # Images supplementaires de l'ecran de mission (boss, batiments...) : ajouter a _m(...) un argument  art=[...]  (et show_units=False pour ne pas afficher les ennemis) dont chaque element est
     #   dict(png='Boss.png', fw=36, fh=36, frames=4, x=30, y=110, walk=True)   image(s) cote a cote, fw x fh pixels (paire, 80 pixels maxi), 1, 2 ou 4 images
     #   dict(tiles=[[8, 9, 10], [12, 13, 14]], x=4, y=110)                       bloc de tuiles du decor (12 x 8 pixels), numeros du TileSet
@@ -357,7 +363,7 @@ if os.environ.get('PAPI_TEST_GREN'):           # essai : la mission 1 devient 't
  
 for _i, _z in enumerate(ZONES): _z['name'] = 'zone%02d' % (_i + 1)       # noms de fichiers uniques (le numero de mission recommence a 1 a chaque zone)
 ZSTART = [min(i for i, z in enumerate(ZONES) if z['zn'] == k) for k in sorted(ZINFO)]          # premiere mission de chaque zone
-for _k in ZINFO: assert sum(1 for z in ZONES if z['zn'] == _k) >= (4 if _k == 4 else 3 if _k == 5 else 5), "chaque zone doit avoir au moins 5 missions (4 pour la zone 4 : touches secretes 1 a 6)"
+for _k in ZINFO: assert sum(1 for z in ZONES if z['zn'] == _k) >= (4 if _k == 4 else 3 if _k in (5, 6) else 5), "chaque zone doit avoir au moins 5 missions (4 pour la zone 4 : touches secretes 1 a 6)"
 
 # jingle "ZONE CLEAR !" (assets/ZoneClear.wav, analyse du WAV) : 64 images de 20 ms, une hauteur par image sur un canal du AY.
 # Introduction 0-280 ms (270 Hz qui descend a 185 Hz), puis 4 glissandos montants (x1,166 par image : 185 Hz -> ~1 kHz).
@@ -482,7 +488,7 @@ def build_zone(z):
     KIND = {(0, 128, 0): 0x00, (255, 0, 0): 0x03, (0, 128, 255): 0x01, (255, 255, 0): 0x80, (128, 0, 255): 0x07,    # violet : obstacle normal (bits 0-1 comme le rouge) mais pas un abri (bit 2), sortie des casernes
             (255, 0, 210): 0x08, (255, 255, 255): 0x17, (128, 0, 0): 0x28}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
     PURPLE = (128, 0, 255); HOLE = (128, 0, 0)                  # marron : trou de sniper (0x28 : bit 3 = les ennemis ne le franchissent pas, comme l'eau ; bit 5 = mortel pour Papi, voir mv_hazard ; les balles passent)
-    tpurple = set(); twater = set(); tholes = set()
+    tpurple = set(); twater = set(); tholes = set(); tcyan = set()
     tiles_img = load(ts_name)
     tkind = []
     for t in range(40 * nts):
@@ -491,6 +497,7 @@ def build_zone(z):
         for y in range(8):
             for x in range(12):
                 pb = b.getpixel((tx + x, ty + y))
+                if pb == (128, 255, 255) and pb != a.getpixel((tx + x, ty + y)): tcyan.add(t)
                 if pb != a.getpixel((tx + x, ty + y)) and pb in KIND:
                     k = KIND[pb]
                     if pb == PURPLE: tpurple.add(t)
@@ -546,7 +553,7 @@ def build_zone(z):
     nspawn = len(spawns)
     spawns += [spawns[i % nspawn] for i in range(16 - nspawn)]
     if nsn:                                            # trous de sniper : la liste des trous suit les points d'apparition (indices nspawn..14), #FF = vide ; chaque sniper en choisit un au hasard a chaque sortie (sn_pick)
-        holes = [(c * 6, 8 * r - 4) for r in range(24) for c in range(13) if tmap[r][c] in tholes]
+        holes = [(c * 6, 8 * r - 4) for r in range(24) for c in range(13) if tmap[r][c] in (tcyan if z.get('cyan_snipers') else tholes)]
         assert len(holes) >= nsn and nspawn + len(holes) <= 15, 'zone %s : %d trous pour %d snipers (%d points d apparition)' % (z['name'], len(holes), nsn, nspawn)
         spawns = spawns[:nspawn] + holes + [(255, 0)] * (16 - nspawn - len(holes))
     used = sorted({t for row in tmap for t in row})
@@ -776,7 +783,7 @@ def build_hof(title_rows):
                 db(f, [red if (r[x] and r[x + 1]) else (enc(2, 0) if r[x] else (enc(0, 2) if r[x + 1] else 0)) for x in range(0, w, 2)], 16)
 
 # ---------------------------------------------------------------- ecrans de mission (overlay)
-ACCESS = {2: 'FONZIE', 3: 'MAMIE', 4: 'SUGAR', 5: 'BASIC'}      # codes d'acces des zones (numero de zone -> code), saisis dans le menu (ACCESS CODE)
+ACCESS = {2: 'FONZIE', 3: 'MAMIE', 4: 'SUGAR', 5: 'BASIC', 6: 'BANDANA'}      # codes d'acces des zones (numero de zone -> code), saisis dans le menu (ACCESS CODE)
 def build_access():
     with open(os.path.join(ROOT, 'src', 'access.inc'), 'w') as f:
         f.write('; --- genere par tools/convert.py : codes d acces : numero de zone, code, 0 ; fin : 0 ---\naccess_tab:\n')
@@ -895,7 +902,7 @@ JINGLE_BYTES = 1200 + 1400 + 1000      # (+ jingles de victoire de zone)
 JV_UNUSED = 0      # place reservee pour le jingle de depart de niveau (verifiee par l'assert de l'assemblage)
 def intro_sectors():
     per, blobs = intro_items()
-    return max(4, -(-(2600 + JINGLE_BYTES + sum(len(d) for _, d in blobs)) // 512))
+    return max(4, -(-(2600 + 200 * max(0, len(ZONES) - 23) + JINGLE_BYTES + sum(len(d) for _, d in blobs)) // 512))
 
 def main():
     global INTRO_N

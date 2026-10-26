@@ -1,8 +1,8 @@
 ; --- genere par tools/convert.py : titre du menu (27 lignes de 78 octets), octets du texte defilant ---
 TITLE_H     equ 27
 TITLE_Y     equ 30
-MENU_NZG    equ 5
-menu_zstart: db 0,5,10,15,19       ; premiere mission de chaque zone (touche + du menu)
+MENU_NZG    equ 6
+menu_zstart: db 0,5,10,15,19,23       ; premiere mission de chaque zone (touche + du menu)
 title_data:
  db #00,#00,#00,#00,#00,#40,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#80,#80,#80,#00,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0
  db #C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#00,#00,#00,#00,#00,#00,#00,#00

@@ -5716,17 +5716,18 @@ intro_start:
             include 'intro.asm'
 intro_stop:
             assert intro_stop-intro_start<=INTRO_N*512
+            assert intro_stop-intro_start+#A000<=#D400
             save 'build/intro.bin',#A000,intro_stop-intro_start
 
 ;------------------------------------------------------------------------------
 ; overlay du game over : jingle, lu en GO_LOAD (#4000, sur la copie du decor : la scene est figee, le menu reconstruira tout) : build/gover.bin
 ;------------------------------------------------------------------------------
-            org GO_LOAD,#D000                   ; assemble pour #4000, range en #D000 (zone d assemblage libre : l overlay des missions peut depasser #B800)
+            org GO_LOAD,#D400                   ; assemble pour #4000, range en #D400 (zone d assemblage libre : l overlay des missions peut aller jusqu'en #D400)
 go_start:
             include 'gameover.asm'
 go_stop:
             assert go_stop-go_start<=GO_N*512
-            save 'build/gover.bin',#D000,go_stop-go_start
+            save 'build/gover.bin',#D400,go_stop-go_start
 
 ;------------------------------------------------------------------------------
 ; overlay du Hall of Fame : saisie du nom (apres une partie dont le score entre dans le classement) et classement qui defile (menu) : build/hof.bin

@@ -4,4 +4,5 @@ access_tab:
  db 3,'MAMIE',0
  db 4,'SUGAR',0
  db 5,'BASIC',0
+ db 6,'BANDANA',0
  db 0

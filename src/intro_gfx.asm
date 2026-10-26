@@ -1,6 +1,6 @@
 ; --- genere par tools/convert.py : textes des ecrans de mission : x, y, couleur, texte ; x = 0 : fin ---
 intro_tab:
- dw intro_0,intro_1,intro_2,intro_3,intro_4,intro_5,intro_6,intro_7,intro_8,intro_9,intro_10,intro_11,intro_12,intro_13,intro_14,intro_15,intro_16,intro_17,intro_18,intro_19,intro_20,intro_21,intro_22
+ dw intro_0,intro_1,intro_2,intro_3,intro_4,intro_5,intro_6,intro_7,intro_8,intro_9,intro_10,intro_11,intro_12,intro_13,intro_14,intro_15,intro_16,intro_17,intro_18,intro_19,intro_20,intro_21,intro_22,intro_23,intro_24,intro_25
 intro_0:
  db 19,64,#F3,"MISSION 01",0
  db 5,96,#F3,"KILL 15 SOLDIERS.",0
@@ -104,24 +104,40 @@ intro_22:
  db 21,96,#F3,"KILL BOSS",0
  db 23,116,#F3,"HELMUT !",0
  db 0
+intro_23:
+ db 19,64,#F3,"MISSION 01",0
+ db 7,96,#F3,"KILL 15 SNIPERS.",0
+ db 0
+intro_24:
+ db 19,64,#F3,"MISSION 02",0
+ db 13,96,#CF,"TIME ATTACK !",0
+ db 13,116,#F3,"SURVIVE 40 S.",0
+ db 0
+intro_25:
+ db 19,64,#F3,"MISSION 03",0
+ db 1,96,#F3,"KILL 25 GRENADIERS.",0
+ db 0
 intro_title0:
- db 11,40,#CF,"HELMUTS BUNKER",0
+ db 13,40,#CF,"C++ BASE CAMP",0
  db 0
 intro_title1:
- db 3,40,#CF,"HIDDEN HEADQUARTER",0
+ db 11,40,#CF,"HELMUTS BUNKER",0
  db 0
 intro_title2:
- db 15,40,#CF,"OUTPOST C-01",0
+ db 3,40,#CF,"HIDDEN HEADQUARTER",0
  db 0
 intro_title3:
- db 5,40,#CF,"THE LOST BARRACKS",0
+ db 15,40,#CF,"OUTPOST C-01",0
  db 0
 intro_title4:
+ db 5,40,#CF,"THE LOST BARRACKS",0
+ db 0
+intro_title5:
  db 13,40,#CF,"THE LOST ROAD",0
  db 0
-NZG equ 5
-zone_start: db 5,10,15,19,255
-intro_zend: dw intro_end0,intro_end1,intro_end2,intro_end3,intro_end4
+NZG equ 6
+zone_start: db 5,10,15,19,23,255
+intro_zend: dw intro_end0,intro_end1,intro_end2,intro_end3,intro_end4,intro_end5
 intro_end0:
  db 3,56,#CF,"CONGRATULATIONS !!",0
  db 17,92,#F3,"YOU CLEARED",0
@@ -154,31 +170,41 @@ intro_end4:
  db 3,56,#CF,"CONGRATULATIONS !!",0
  db 17,92,#F3,"YOU CLEARED",0
  db 7,112,#F3,"HELMUTS BUNKER !",0
+ db 3,140,#CF,"ACCESS CODE ZONE 6",0
+ db 25,158,#F3,"BANDANA",0
+ db 0
+intro_end5:
+ db 3,56,#CF,"CONGRATULATIONS !!",0
+ db 17,92,#F3,"YOU CLEARED",0
+ db 9,112,#F3,"C++ BASE CAMP !",0
  db 0
 intro_missions:  ; mission : (nom de la zone, liste d images)
- dw intro_title2,intro_it0
- dw intro_title2,intro_it1
- dw intro_title2,intro_it2
- dw intro_title2,intro_it3
- dw intro_title2,intro_it4
- dw intro_title3,intro_it5
- dw intro_title3,intro_it6
- dw intro_title3,intro_it7
- dw intro_title3,intro_it8
- dw intro_title3,intro_it9
- dw intro_title1,intro_it10
- dw intro_title1,intro_it11
- dw intro_title1,intro_it12
- dw intro_title1,intro_it13
- dw intro_title1,intro_it14
- dw intro_title4,intro_it15
- dw intro_title4,intro_it16
- dw intro_title4,intro_it17
- dw intro_title4,intro_it18
- dw intro_title0,intro_it19
- dw intro_title0,intro_it20
- dw intro_title0,intro_it21
- dw intro_title0,intro_it22
+ dw intro_title3,intro_it0
+ dw intro_title3,intro_it1
+ dw intro_title3,intro_it2
+ dw intro_title3,intro_it3
+ dw intro_title3,intro_it4
+ dw intro_title4,intro_it5
+ dw intro_title4,intro_it6
+ dw intro_title4,intro_it7
+ dw intro_title4,intro_it8
+ dw intro_title4,intro_it9
+ dw intro_title2,intro_it10
+ dw intro_title2,intro_it11
+ dw intro_title2,intro_it12
+ dw intro_title2,intro_it13
+ dw intro_title2,intro_it14
+ dw intro_title5,intro_it15
+ dw intro_title5,intro_it16
+ dw intro_title5,intro_it17
+ dw intro_title5,intro_it18
+ dw intro_title1,intro_it19
+ dw intro_title1,intro_it20
+ dw intro_title1,intro_it21
+ dw intro_title1,intro_it22
+ dw intro_title0,intro_it23
+ dw intro_title0,intro_it24
+ dw intro_title0,intro_it25
 ; image : donnees (2), taille d une image (2), largeur en octets, hauteur en lignes, masque d images - 1, x final, y, drapeaux (bit 0 = arrive de la gauche, bit 1 = redessine a chaque image : decor devant les ennemis), retard
 intro_it0: db 3
  dw intro_unit1,72
@@ -363,6 +389,25 @@ intro_it22: db 3
  db 6,24,3,36,136,1,17
  dw intro_unit6,72
  db 6,12,3,46,148,1,7
+intro_it23: db 3
+ dw intro_unit7,72
+ db 6,12,3,26,116,1,27
+ dw intro_unit7,72
+ db 6,12,3,36,116,1,17
+ dw intro_unit7,72
+ db 6,12,3,46,116,1,7
+intro_it24: db 2
+ dw intro_unit1,72
+ db 6,12,3,31,136,1,17
+ dw intro_unit6,72
+ db 6,12,3,41,136,1,7
+intro_it25: db 3
+ dw intro_unit6,72
+ db 6,12,3,26,116,1,27
+ dw intro_unit6,72
+ db 6,12,3,36,116,1,17
+ dw intro_unit6,72
+ db 6,12,3,46,116,1,7
 intro_unit1:
  db #00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#00,#C3,#41
  db #00,#00,#00,#40,#D3,#C3,#D3,#00,#41,#41,#D3,#41,#51,#00,#41,#C3
