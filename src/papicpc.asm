@@ -2891,7 +2891,7 @@ enemy_think:
             ld a,(hl)
             and #83
             jr nz,.seek
-            ld a,1
+            ld a,3
             ld (cov_now),a
             jr .near                    ; en couverture : il s'arrete, se tourne vers Papi et tire
 .seek       ld a,(frame)                ; pas encore a couvert : il cherche un poste proche (sauf 1 reflexion sur 4,
@@ -3064,7 +3064,7 @@ enemy_shoot:
 .nsra            ld a,(cov_now)              ; tir en couverture : la balle traverse l'obstacle derriere lequel il se tient
             or a
             jr z,.nc
-            ld (ix+B_PASS),3
+            ld (ix+B_PASS),a            ; (cov_now = nombre de pas : 3 en couverture, 10 pour un sniper de tuile bleu clair : il traverse les obstacles qui l'entourent)
 .nc         ld a,1                      ; son du tir (TirSon), comme pour Papi
             call sfx
 .nf         pop ix

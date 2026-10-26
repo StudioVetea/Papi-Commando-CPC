@@ -965,8 +965,17 @@ sn_mod:     ld a,ixl
             jr c,.nofire
             ld a,(frame)
             ld (hl),a
-            xor a
-            ld (cov_now),a
+            ld b,(ix+E_X)               ; sniper sur une tuile bleu clair (case sans bit 5 : pas un trou marron) : tir qui traverse les obstacles (cov_now = 10 pas)
+            ld a,(ix+E_Y)
+            add a,4
+            ld c,a
+            call cell_ptr
+            ld a,(hl)
+            and #20
+            ld a,0
+            jr nz,.cv
+            ld a,10
+.cv         ld (cov_now),a
             call enemy_shoot
 .nofire     ld a,(ix+E_DIR)
             ld b,8
