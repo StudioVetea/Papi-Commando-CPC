@@ -5464,8 +5464,8 @@ boot:
             ld hl,cover_pal
             call set_palette
             call OVLB+(ovlb_load-ovlb_src)  ; les ecrans (menu, missions, game over, Hall of Fame) : lus UNE fois, dans les banques 4, 5 et 6
-            call OVLB+(ovlb_voice-ovlb_src) ; la voix numerisee (banque 7) : « Papi Commando CPC ! », ~2,4 s, jeu fige
-            ld bc,50*5-VOICE_FR         ; la cover reste a l ecran 5 secondes au total (250 images), puis le menu principal
+            di                          ; (la voix numerisee coupait les interruptions ici : elles restent coupees jusqu'a l'installation de notre routine)
+            ld bc,50*5                  ; la cover reste a l ecran 5 secondes au total (250 images), puis le menu principal
 .wait       push bc
             ld b,#F5
 .w1         in a,(c)
@@ -5546,12 +5546,6 @@ ovlb_load:  ld hl,OVLB+(ovlb_tab-ovlb_src)
             ld bc,#7F00+GAME_CFG        ; le miroir revient
             out (c),c
             jp fdc_off                  ; le moteur s'arrete : plus de lecture avant la premiere zone
-ovlb_voice: ld bc,#7F00+CFG_BOSS        ; (ce code ne peut pas etre dans la fenetre #4000 : il change la banque)
-            out (c),c
-            call m_voice
-            ld bc,#7F00+GAME_CFG
-            out (c),c
-            ret
 ovlb_tab:   db CFG_MENU,MENU_TRK
             dw MENU_N,MENU_LOAD
             db CFG_INTRO,INTRO_TRK

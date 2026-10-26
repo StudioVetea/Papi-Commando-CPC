@@ -262,76 +262,8 @@ m_hud_kills:
             ret
 
             include 'veh_mod.asm'
-;------------------------------------------------------------------------------
-; voix numerisee de l'intro (banque 7 aussi) : « Papi Commando CPC ! », echantillons 4 bits (2 par octet, poids fort d'abord) joues
-; sur le canal A du PSG (registre 8 = volume, tons et bruit coupes). Interruptions coupees pendant la lecture (~2,4 s).
-; Entree : m_voice (appelee par la rampe 'voice_play' du demarrage, miroir de la banque 1 non necessaire)
-;------------------------------------------------------------------------------
-VOICE_DATA  equ BOSS_LOAD+VOICE_OFF
-VOICE_END   equ VOICE_DATA+VOICE_LEN
-VOICE_DELAY equ 35                      ; reglage de la cadence (~6 kHz), mesure a l'emulateur
-m_voice:    di
-            ld bc,#F782                 ; PPI : port A en sortie
-            out (c),c
-            ld a,7                      ; registre 7 (mixer) = tout coupe
-            ld e,#3F
-            call .psg
-            ld a,8                      ; registre 8 (volume A) : reste selectionne, on n'ecrit plus que la valeur
-            ld e,0
-            call .psg
-            ld de,VOICE_DATA
-            ld h,#80
-            ld l,0
-.byte       ld a,(de)
-            rrca
-            rrca
-            rrca
-            rrca
-            and 15
-            ld c,a
-            ld b,#F4
-            out (c),c                   ; donnee du volume sur le port A
-            ld b,#F6
-            out (c),h                   ; ecriture PSG (BDIR = 1)
-            out (c),l                   ; inactif
-            ld a,VOICE_DELAY
-.d1         dec a
-            jr nz,.d1
-            ld a,(de)
-            inc de
-            and 15
-            ld c,a
-            ld b,#F4
-            out (c),c
-            ld b,#F6
-            out (c),h
-            out (c),l
-            ld a,VOICE_DELAY
-.d2         dec a
-            jr nz,.d2
-            ld a,d
-            cp hi(VOICE_END)
-            jr nz,.byte
-            ld c,0                      ; silence
-            ld b,#F4
-            out (c),c
-            ld b,#F6
-            out (c),h
-            out (c),l
-            ret
-.psg        ld b,#F4                    ; A = registre, E = valeur : selection puis ecriture
-            out (c),a
-            ld bc,#F6C0
-            out (c),c
-            ld bc,#F600
-            out (c),c
-            ld b,#F4
-            out (c),e
-            ld bc,#F680
-            out (c),c
-            ld bc,#F600
-            out (c),c
-            ret
+; (la voix numerisee de l'intro a ete retiree : 7 Ko de moins dans la banque 7)
+CODE_MAX    equ BOSS_LOAD+VOICE_OFF     ; limite du code de la banque 7 ; les images des camions suivent (TRUCK_OFF)
 
 ; ==== OFFICIERS et GRENADIERS (voir gr_call dans boss.asm) ====
 
@@ -1052,5 +984,5 @@ sn_mod:     ld a,ixl
             ld a,4
             jp .show
 
-            assert $<=VOICE_DATA                ; (la voix et les images des vehicules sont ajoutees apres le code par tools/mkdisk.py : build/boss_code.bin + voice.bin + trucks.bin)
+            assert $<=CODE_MAX                  ; (les images des vehicules sont ajoutees apres le code par tools/mkdisk.py : build/boss_code.bin + trucks.bin)
 TRUCK_DATA  equ BOSS_LOAD+TRUCK_OFF

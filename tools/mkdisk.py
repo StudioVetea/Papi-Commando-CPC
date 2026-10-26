@@ -42,9 +42,9 @@ for name, e in lay.items():
         sys.path.insert(0, os.path.join(ROOT, 'tools'))
         import convert as cv
         code = open(os.path.join(ROOT, 'build', 'boss_code.bin'), 'rb').read()
-        voice = open(os.path.join(ROOT, 'build', 'voice.bin'), 'rb').read(); trucks = open(os.path.join(ROOT, 'build', 'trucks.bin'), 'rb').read()
-        assert len(code) <= cv.VOICE_OFF and len(voice) == cv.VOICE_LEN
-        img = code.ljust(cv.VOICE_OFF, b'\0') + voice
+        trucks = open(os.path.join(ROOT, 'build', 'trucks.bin'), 'rb').read()
+        assert len(code) <= cv.VOICE_OFF
+        img = code.ljust(cv.VOICE_OFF, b'\0')
         img = img.ljust(cv.TRUCK_OFF, b'\0') + trucks
         assert len(img) <= 0x4000
         open(os.path.join(ROOT, 'build', 'boss.bin'), 'wb').write(img)

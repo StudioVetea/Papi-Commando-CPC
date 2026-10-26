@@ -719,46 +719,12 @@ def build_menu():
 
 HOF_INIT = [('Vetea', 9000), ('ShiningBZH', 7500), ('Fonzie', 6666), ('Kaot', 5000), ('Touko', 2500), ('Nessia', 1000), ('VBT', 500)]
 HOF_N = 10                            # secteurs reserves a l'overlay du Hall of Fame (code, titre, police, cercles)
-VOICE_RATE = 6000                      # voix numerisee de l'intro : 6 kHz, 4 bits (niveaux de volume du PSG)
-VOICE_OFF = 0x1200                     # la voix commence 4,3 Ko apres le debut de la banque 7 (code du boss, des vehicules, des officiers et des grenadiers)
-def build_voice():
-    """assets/PapiCommandoCPC_voix.wav -> build/voice.bin : echantillons 4 bits (2 par octet, poids fort d'abord) = indices de volume du
-    PSG (canal A, registre 8). Les niveaux du PSG ne sont pas lineaires : on choisit, pour chaque echantillon, le niveau le plus proche."""
-    import numpy as np
-    from scipy.io import wavfile
-    from scipy.signal import resample_poly
-    from math import gcd
-    r, x = wavfile.read(os.path.join(ROOT, 'assets', 'PapiCommandoCPC_voix.wav'))
-    x = x.astype(float)
-    if x.ndim > 1: x = x.mean(axis=1)
-    x -= x.mean()
-    g = gcd(VOICE_RATE, r)
-    x = resample_poly(x, VOICE_RATE // g, r // g)
-    x /= abs(x).max()
-    loud = np.nonzero(abs(x) > 0.05)[0]                         # silences de debut et de fin retires
-    x = x[max(loud[0] - 300, 0):loud[-1] + 300]
-    x = np.tanh(2.2 * x) / np.tanh(2.2)                          # compression douce : voix plus forte
-    lv = np.array([0, 0.0137, 0.0205, 0.0291, 0.0423, 0.0618, 0.0847, 0.1369, 0.1691, 0.2647, 0.3527, 0.4499, 0.5704, 0.6873, 0.8482, 1.0])
-    t = x * 0.5 + 0.5                                           # 0..1 autour du niveau median
-    t = t * (lv[15] - lv[0]) + lv[0]
-    q = np.zeros(len(t), int)                                   # quantification avec diffusion d'erreur (niveaux du PSG tres inegaux)
-    e = 0.0
-    for i in range(len(t)):
-        v = t[i] + 0.7 * e
-        q[i] = int(np.abs(lv - v).argmin())
-        e = v - lv[q[i]]
-    n = (len(q) + 1023) // 1024 * 1024                          # multiple de 512 octets
-    q = np.concatenate([q, np.full(n - len(q), np.abs(lv - 0.5).argmin())])
-    packed = bytes(int(a) << 4 | int(b) for a, b in zip(q[0::2], q[1::2]))
-    open(os.path.join(BUILD, 'voice.bin'), 'wb').write(packed)
-    print('voix : %d echantillons (%.2f s), %d octets' % (len(q), len(q) / VOICE_RATE, len(packed)))
-    global VOICE_FR
-    VOICE_FR = len(q) * 50 // VOICE_RATE
-    return len(packed)
+VOICE_OFF = 0x1C00                     # limite du code de la banque 7 (boss, vehicules, officiers, grenadiers, snipers) : les images des camions suivent (la voix numerisee a ete retiree)
+VOICE_LEN = 0
+VOICE_FR = 0
 os.makedirs(os.path.join(ROOT, 'build'), exist_ok=True)
-VOICE_LEN = build_voice()
 TRUCK_OFF = VOICE_OFF + VOICE_LEN   # images des camions : apres la voix (banque 7)
-BOSS_N = 19                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
+BOSS_N = 10                            # secteurs de la banque 7 SUR LA DISQUETTE : l'image (code, voix, camions : 16 Ko au plus) y est compressee (mkdisk.py) et decompressee au demarrage
 BOSS_PAD = 0x4000 - BOSS_N * 512                      # elle est lue en BOSS_LOAD + BOSS_PAD (derniers 8 Ko de la fenetre) puis decompressee sur place
 
 def build_trucks():
