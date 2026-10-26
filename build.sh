@@ -6,9 +6,10 @@ set -e
 cd "$(dirname "$0")"
 RASM=${RASM:-rasm}
 # ./build.sh        : version de DIFFUSION (sans codes secrets)
-# ./build.sh debug  : version de TEST (touche + et 1-6 du menu, touche M) -> build/PAPICPC.dsk aussi
+# ./build.sh debug  : version de TEST (touche + et 1-6 du menu ; touche M avec PAPI_METER=1) -> build/PAPICPC.dsk aussi
 DEF=
 if [ "$1" = debug ]; then DEF=-DCHEATS=1; fi
+if [ "$PAPI_METER" = 1 ]; then DEF="$DEF -DMETER=1"; fi        # touche M (jauge de charge dans la bordure) : 22 octets de la partie permanente, donc a la demande (PAPI_METER=1 ./build.sh debug)
 mkdir -p build
 python3 tools/convert.py
 rm -f build/PAPICPC.dsk

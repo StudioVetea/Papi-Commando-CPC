@@ -893,7 +893,7 @@ keyscan:
 .k6         ld a,c
             ld (joy),a
 
-            ifdef CHEATS                ; version de TEST seulement : touche M = jauge de charge
+            ifdef METER                 ; sur demande (PAPI_METER=1 ./build.sh debug) : touche M = jauge de charge
             ; touche M (jauge de charge), sur front montant
             ld a,(keymap+4)
             cpl
@@ -3750,6 +3750,11 @@ restore_col:
 ; balle 1 octet x 6 lignes : HL = adresse ecran
 draw_bullet:
             ld de,spr_balle
+            ld a,ixl                    ; les 4 premieres balles sont celles de Papi, les autres celles des ennemis : leur propre image (spr_balle_e, 12 octets plus loin)
+            cp lo(bullets+4*BSIZE)
+            jr c,.pb
+            ld e,lo(spr_balle_e)
+.pb
             ld b,6
 .l          ld a,(de)
             inc de
@@ -4748,6 +4753,7 @@ big_buf:    ds 4                        ; (4 octets)
 glyph_buf   equ big_buf+4               ; caractere depaquete (expand_glyph) : 10 octets
             ds 10
 
+
 ; HL = texte, B = x (octet), C = y, (big_on) = octet allume.  Caracteres doubles : 4 octets x 10 lignes
 print_big:
 .next       ld a,(hl)
@@ -5069,7 +5075,8 @@ sound_update:
             ld e,a
             ld a,9
             sub e
-            ld e,a                      ; t = 0..9
+            and 3
+            ld e,a                      ; t = 0..9 modulo 4 (le volume se repete tous les 4 images)
             ld d,0
             ld hl,pick_vol
             add hl,de
@@ -5140,7 +5147,7 @@ sound_update:
             ld a,7
             jp ay_write
 
-pick_vol:   db 15,13,10,6,15,13,10,6,15,13   ; volume par image : une rafale toutes les 4 images (80 ms), comme le WAV
+pick_vol:   db 15,13,10,6   ; volume par image : une rafale toutes les 4 images (80 ms), comme le WAV
 jingle:     db 30,45,70                 ; periodes, de la derniere note a la premiere
 shot_vol:   db 5,9,12,14,15             ; volume du coup de feu, indexe par l'image restante 0..4
 
@@ -5328,6 +5335,8 @@ vars_end    equ VARBASE+216
 ; tables par zone, #3000-#31FF) est ensuite ecrase ; le code de demarrage, lui, est APRES, hors de portee des tables.
             include 'boss.asm'
 perm_end:
+            assert (bullets and #FF00)==((bullets+NBUL*BSIZE-1) and #FF00)       ; (draw_bullet compare seulement l'octet de poids faible de IX et de l'adresse de l'image)
+            assert (spr_balle and #FF00)==(spr_balle_e and #FF00)
             assert $<=XSLOT_BASE                ; la partie permanente doit finir avant les emplacements d'images supplementaires
             ds XSLOT_BASE-$
             ds NXS*144                          ; images d'unites en plus (zone du boss) : chargees par load_zone_data

@@ -920,7 +920,7 @@ def main():
     INTRO_N = intro_sectors()
     os.makedirs(BUILD, exist_ok=True)
     papi = load('PapiCPC_12x12.png'); expl = load_expl()
-    gren = load('Grenade_4x6.png'); ball = load('Balle2x6.png'); ecl = load('EclatBalle_4x6.png')
+    gren = load('Grenade_4x6.png'); ball = load('Balle2x6.png'); ballE = load('BalleEnnemi2x6.png'); ecl = load('EclatBalle_4x6.png')
     with open(OUT, 'w') as f:
         f.write('; --- genere par tools/convert.py : ne pas modifier a la main ---\n\n')
         f.write('palette_hw:            ; 16 encres + bordure (numeros materiels)\n')
@@ -931,6 +931,8 @@ def main():
         for fr in range(3): db(f, masked(ecl, fr * 4, 0, 4, 6), 4)
         f.write('\nspr_balle:             ; 1 image 1x6\n')
         db(f, masked(ball, 0, 0, 2, 6), 2)
+        f.write('\nspr_balle_e:           ; balle des ennemis (unites, vehicules, boss) : 1 image 1x6, juste apres spr_balle\n')
+        db(f, masked(ballE, 0, 0, 2, 6), 2)
         f.write('\nfont:                  ; glyphes 3x5 compactes : 2 octets (poids faible d abord) = 15 bits, ligne du haut en tete, ordre "%s"\n' % FONT_ORDER)
         for ch in FONT_ORDER:
             v = int(FONT[ch], 2) << 1
