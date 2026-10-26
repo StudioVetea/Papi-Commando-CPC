@@ -480,8 +480,8 @@ def build_zone(z):
     a = Image.open(os.path.join(A, ts_name)).convert('RGB')
     b = Image.open(os.path.join(A, ob_name)).convert('RGB')
     KIND = {(0, 128, 0): 0x00, (255, 0, 0): 0x03, (0, 128, 255): 0x01, (255, 255, 0): 0x80, (128, 0, 255): 0x07,    # violet : obstacle normal (bits 0-1 comme le rouge) mais pas un abri (bit 2), sortie des casernes
-            (255, 0, 210): 0x08, (255, 255, 255): 0x17, (128, 0, 0): 0x00}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
-    PURPLE = (128, 0, 255); HOLE = (128, 0, 0)                  # marron : trou de sniper (case libre : seule sa position compte)
+            (255, 0, 210): 0x08, (255, 255, 255): 0x17, (128, 0, 0): 0x28}                                                                                     # rose : EAU (bit 3) : seuls les ennemis ne la franchissent pas (voir water.asm)
+    PURPLE = (128, 0, 255); HOLE = (128, 0, 0)                  # marron : trou de sniper (0x28 : bit 3 = les ennemis ne le franchissent pas, comme l'eau ; bit 5 = mortel pour Papi, voir mv_hazard ; les balles passent)
     tpurple = set(); twater = set(); tholes = set()
     tiles_img = load(ts_name)
     tkind = []

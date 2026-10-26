@@ -1349,9 +1349,12 @@ mv_hazard:  ld a,(v_nb)
             ld c,a
             call cell_ptr
             ld a,(hl)
+            bit 5,a                     ; trou de sniper (bit 5) : mortel pour Papi
+            jr nz,.pk
             and 7
             cp 4
-            call z,player_hit
+            jr nz,.en
+.pk         call player_hit
 .en         ld ix,enemies
             ld b,MAXENEMY
 .l          ld a,(ix+E_STATE)
