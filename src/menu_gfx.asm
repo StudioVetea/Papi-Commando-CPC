@@ -3,6 +3,8 @@ TITLE_H     equ 27
 TITLE_Y     equ 30
 MENU_NZG    equ 6
 menu_zstart: db 0,5,10,15,19,23       ; premiere mission de chaque zone (touche + du menu)
+DEMO_N      equ 20
+demo_tab:   db 0,1,2,3,5,6,7,8,10,11,12,13,16,17,19,20,21,23,24,25       ; missions de la demo du menu (au hasard)
 title_data:
  db #00,#00,#00,#00,#00,#40,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#80,#80,#80,#00,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0
  db #C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#C0,#00,#00,#00,#00,#00,#00,#00,#00

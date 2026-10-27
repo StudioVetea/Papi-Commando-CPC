@@ -69,7 +69,9 @@ menu_run:
             ld bc,MV_LEN-1
             ld (hl),0
             ldir
-            ld a,(acc_zone)             ; zone choisie par un code d'acces (la touche + du menu de test part de la)
+            ld hl,acc_zone              ; bit 7 : la demo vient de finir (voir demo_go) ; zone choisie par un code d'acces (la touche + du menu de test part de la)
+            res 7,(hl)
+            ld a,(hl)
             ld (m_z),a
             call blackout
             call mk_tab
@@ -118,7 +120,7 @@ menu_run:
             ld hl,(mu_n)                ; fin du morceau : avant qu'il reboucle, ecran du Hall of Fame (l'overlay rend la main a menu_enter : le cycle recommence)
             ld a,h
             or l
-            jp z,hof_go
+            jp z,demo_go
             call mu_update              ; (remplace sound_update : le melangeur du AY est a la musique)
             call keyscan
             ld a,(joy)                  ; haut / bas : change d'option
@@ -250,6 +252,23 @@ menu_run:
 acc_go:     call mu_stop                ; option ACCESS CODE : l'ecran de saisie du Hall of Fame, en mode 2
             ld a,2
             jr hof_go2
+; fin du morceau : au lieu du classement, une zone au hasard (mission sans boss, voir demo_tab) jouee sans Papi pendant quelques secondes (mode demo : acc_zone bit 7, lu par
+;   intro.asm, veh_mod.asm et gameover.asm) ; puis retour au menu.  La partie normale commence comme avec le tir : zone_cur, puis retour a menu_enter.
+demo_go:    ld a,r
+            and #7F
+.md         cp DEMO_N
+            jr c,.mk
+            sub DEMO_N
+            jr .md
+.mk         ld e,a
+            ld d,0
+            ld hl,demo_tab
+            add hl,de
+            ld a,(hl)
+            ld (zone_cur),a
+            ld hl,acc_zone
+            set 7,(hl)
+            jp mu_stop
 hof_go:     call mu_stop
             xor a
 hof_go2:    ld (HOF_MODE),a

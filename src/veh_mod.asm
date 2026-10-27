@@ -33,10 +33,30 @@ EXPL_DATA   equ TRUCK_DATA+10*TIMG
 
 m_veh:      push ix
             push iy
+            ld b,a
+            ld a,(veh_on)
+            bit 7,a                     ; bit 7 : mode DEMO du menu principal (acc_zone bit 7, voir intro.asm) : zone au hasard sans Papi
+            jr nz,.dm
+.go         ld a,b
             call mv_disp
-            pop iy
+.out        pop iy
             pop ix
             ret
+.dm         and 7                       ; mode reel de la mission (0 : ni camion ni bidon)
+            ld c,a
+            ld a,b
+            cp 1
+            call z,mv_demo              ; (une fois par image, avant tout le reste) ; conserve BC
+            ld a,c
+            or a
+            jr z,.out                   ; zone sans camion ni bidon : rien d'autre
+            ld hl,veh_on
+            res 7,(hl)                  ; le module ne connait que les modes 1 a 4
+            ld a,b
+            call mv_disp
+            ld hl,veh_on
+            set 7,(hl)
+            jr .out
 mv_disp:    dec a
             jp z,mv_tick
             dec a
@@ -48,6 +68,35 @@ mv_disp:    dec a
             dec a
             jp z,mv_late
             jp mv_egren                 ; 6 : explosion d'une grenade ennemie (eg_ex, eg_ey)
+
+; MODE DEMO : Papi est hors jeu (p_state = 4 : player_dying / .over ne fait qu'attendre p_timer, puis rend la main au menu par l'overlay GAME OVER qui, en demo, ne joue rien) ;
+;   les ennemis arrivent et vont vers sa place (invisible), sans tirer ni faire de degats.  Au bout de 512 images (10 s), ou si on appuie sur tir : retour au menu.
+mv_demo:    push bc
+            xor a
+            ld (won),a                  ; (la mission ne peut pas etre 'gagnee' en demo)
+            ld a,(p_state)
+            cp 4
+            jr z,.run
+            ld a,4
+            ld (p_state),a
+            ld a,PAPI_Y1                ; sa place de depart (les ennemis visent cette case)
+            ld (p_y),a
+            ld hl,0
+            ld (v_dm),hl
+.run        ld hl,(v_dm)
+            inc hl
+            ld (v_dm),hl
+            ld a,h
+            cp 2
+            jr nc,.end
+            ld a,(joy)
+            bit 4,a
+            ld a,255
+            jr z,.set
+.end        xor a                       ; (p_timer a 0 : player_dying / .over rend la main tout de suite, par l'overlay GAME OVER qui ne fait rien en demo)
+.set        ld (p_timer),a
+            pop bc
+            ret
 
 mv_tick:    ld a,(p_state)
             cp 3
@@ -1441,4 +1490,5 @@ il_fn       ds 2
 il_n        ds 1
 ud_x        ds 1
 ud_w        ds 1
+v_dm        ds 2                ; mode demo : images ecoulees
 mv_vars_end:

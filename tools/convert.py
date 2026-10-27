@@ -688,6 +688,8 @@ def build_menu():
         f.write('; --- genere par tools/convert.py : titre du menu (%d lignes de 78 octets), octets du texte defilant ---\n' % h)
         f.write('TITLE_H     equ %d\nTITLE_Y     equ %d\n' % (h, TITLE_Y))
         f.write('MENU_NZG    equ %d\nmenu_zstart: db %s       ; premiere mission de chaque zone (touche + du menu)\n' % (len(ZSTART), ','.join(str(v) for v in ZSTART)))
+        demo = [i for i, z in enumerate(ZONES) if not z.get('boss') and z.get('veh', 0) < 2]          # missions jouables en demo : ni boss ni camion a barre de vie
+        f.write('DEMO_N      equ %d\ndemo_tab:   db %s       ; missions de la demo du menu (au hasard)\n' % (len(demo), ','.join(str(v) for v in demo)))
         f.write('title_data:\n')
         for r in rows: db(f, r, 39)
         # sprites de la poursuite : Papi, soldat, officier, general ; direction 0 droite, 1 gauche ; 4 images ; 72 octets (6 x 12, donnees seules)

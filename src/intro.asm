@@ -4,9 +4,16 @@
 ;  Apres la derniere mission (zone_cur = NZONES) : "CONGRATULATIONS !!" avec le jingle de Zone Clear, puis le menu principal.
 ;==============================================================================
             jp intro_run                ; INTRO_LOAD : ecran de mission
-            jp draw_banner              ; INTRO_LOAD+3 : bandeau du haut de l'ecran
+            jp banner_entry             ; INTRO_LOAD+3 : bandeau du haut de l'ecran
 ; le bandeau (appele plus tard par new_game2) et ses donnees doivent rester dans #4000-#47FF : le reste de l'overlay est ecrase
 ; par la zone qui se charge en #4800
+; mode demo (acc_zone bit 7, voir menu.asm) : pas d'ecran de mission (ecran noir seulement) ; apres le chargement de la zone, veh_on bit 7 branche le module de la demo (veh_mod.asm)
+banner_entry:
+            ld a,(acc_zone)
+            rlca
+            jr nc,draw_banner
+            ld hl,veh_on
+            set 7,(hl)
 draw_banner:
             ld ix,banner_fill
             ld c,200
@@ -51,6 +58,9 @@ banner_end:
             assert banner_end<=#4800
 
 intro_run:  call blackout
+            ld a,(acc_zone)             ; mode demo : on ne montre pas l'ecran de mission
+            rlca
+            ret c
             ld a,(zone_cur)
             cp NZONES
             jr z,.fin

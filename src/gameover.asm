@@ -9,7 +9,10 @@ go_cnt        equ GV+2            ; (2) images restantes
 go_r        equ GV+4
 
             jp go_run                  ; GO_LOAD : point d'entree
-go_run:     ld hl,go_data
+go_run:     ld a,(acc_zone)             ; fin de la demo (acc_zone bit 7, voir menu.asm) : pas de jingle, retour direct au menu
+            rlca
+            ret c
+            ld hl,go_data
             ld (go_src),hl
             ld hl,GO_FRAMES
             ld (go_cnt),hl
