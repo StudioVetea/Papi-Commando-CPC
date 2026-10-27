@@ -2,79 +2,55 @@
 zone_dir:
  db 12,0,7
  dw #55E7
- db 0
  db 12,7,7
  dw #55E9
- db 0
  db 13,5,7
  dw #55E5
- db 0
  db 14,3,7
  dw #5642
- db 0
  db 15,1,11
  dw #6779
- db 0
  db 16,3,8
  dw #631B
- db 0
  db 17,2,8
  dw #631B
- db 0
  db 18,1,8
  dw #6318
- db 0
  db 19,0,8
  dw #6374
- db 0
  db 19,8,12
  dw #66E0
- db 0
  db 21,2,10
  dw #60DB
- db 0
  db 22,3,10
  dw #60F3
- db 0
  db 23,4,10
  dw #6130
- db 0
  db 24,5,10
  dw #60CF
- db 0
  db 25,6,13
  dw #6213
- db 0
  db 27,1,7
  dw #582C
- db 0
  db 27,8,7
  dw #587C
- db 0
  db 28,6,7
  dw #5820
- db 0
  db 29,4,7
  dw #5827
- db 0
  db 30,2,9
  dw #627B
- db 0
  db 31,2,9
  dw #6276
- db 0
  db 32,2,9
  dw #6270
- db 0
  db 33,2,7
  dw #5860
- db 0
  db 34,0,9
  dw #6275
- db 0
  db 35,0,9
  dw #626F
- db 0
  db 36,0,9
  dw #6270
- db 0
+ db 37,0,9
+ dw #5EF4

@@ -656,8 +656,8 @@ load_zone_data:
             ld a,(zone_cur)
             ld e,a
             add a,a
-            add a,e
-            add a,a                     ; x6
+            add a,a
+            add a,e                     ; x5
             ld e,a
             ld d,0
             ld hl,zone_dir
@@ -2014,8 +2014,8 @@ enemy_absent:
             ld a,ixl
             cp 32
             jr nc,.nb
-            ld a,(veh_on)               ; zone 4 (vehicule a barre de vie) : les 2 premieres places sont factices
-            or a
+            ld a,(veh_on)               ; zone 4 (vehicule a barre de vie, modes 2 et 3) : les 2 premieres places sont factices
+            and 3
             jp nz,enemy_next
             jp bk_absent                ; corps ou tete du boss
 .nb

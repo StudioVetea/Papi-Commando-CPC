@@ -347,10 +347,17 @@ ZONES = [
        art=[dict(unit=6, x=26, y=148, walk=True),
             dict(png='BossHelmut_12x24.png', fw=12, fh=24, frames=4, x=36, y=136, walk=True),
             dict(unit=6, x=46, y=148, walk=True)]),
-    # Zone 6 "C++ Base Camp" (cahier des charges de la zone 6) : bidons explosifs, snipers sur les tuiles bleu clair ; la mission finale (Boss GazoKu) viendra apres
+    # Zone 6 "C++ Base Camp" (cahier des charges de la zone 6) : bidons explosifs, snipers sur les tuiles bleu clair
     _m(1, 7, [(1, 50), (6, 50)], kills=15, count=(7,), zn=6, snipers=5, barrels=1),
     _m(2, 8, [(1, 40), (6, 60)], time=40, zn=6, snipers=4, barrels=1),
     _m(3, 9, [(1, 40), (6, 60)], kills=25, count=(6,), zn=6, snipers=5, barrels=1),
+    # Mission finale : Boss GazoKu (45 PV, 750 points) : se comporte comme un grenadier (il garde ses distances, recule vite si Papi s'approche, ne lance que des grenades, une toutes les 1,5 s),
+    #   +15 % de vitesse ; sa garde : 3 grenadiers (la table d'images des grenadiers prend la place de celle des soldats : pas de soldats) + 4 snipers ; 8 unites au plus (le boss compte pour une)
+    _m(4, 9, [(6, 100)], kills=45, zn=6, snipers=4, barrels=1, show_units=False, text=['KILL BOSS', 'GAZOKU !'],
+       boss=dict(hp=45, sheet='BossGazoku_12x24.png', spd=32, burst=0, delay=0, pts=75, gazoku=1),
+       art=[dict(unit=6, x=26, y=148, walk=True),
+            dict(png='BossGazoku_12x24.png', fw=12, fh=24, frames=4, x=36, y=136, walk=True),
+            dict(unit=6, x=46, y=148, walk=True)]),
     # Images supplementaires de l'ecran de mission (boss, batiments...) : ajouter a _m(...) un argument  art=[...]  (et show_units=False pour ne pas afficher les ennemis) dont chaque element est
     #   dict(png='Boss.png', fw=36, fh=36, frames=4, x=30, y=110, walk=True)   image(s) cote a cote, fw x fh pixels (paire, 80 pixels maxi), 1, 2 ou 4 images
     #   dict(tiles=[[8, 9, 10], [12, 13, 14]], x=4, y=110)                       bloc de tuiles du decor (12 x 8 pixels), numeros du TileSet
@@ -575,6 +582,7 @@ def build_zone(z):
         u = UNITS[t]
         if boss and t in (4, 5): u = dict(u, sheet=boss.get('sheet', u['sheet']), spd=boss.get('spd', u['spd']))
         if boss and boss.get('helmut') and t in (4, 5): u = dict(u, cls=7)      # Helmut : ses deux places passent par le module du sniper (banque 7 : hm_mod)
+        if boss and boss.get('gazoku') and t in (4, 5): u = dict(u, cls=6, gren=1 if t == 4 else 0, rows=[0, 1, 2, 3, 0, 1, 0, 1, 4])   # GazoKu : son corps est un grenadier (planche de 4 directions + mort), la tete suit
         return u
     # sprites des unites : images identiques gardees une seule fois, emplacements a partir de SLOT0_ZONE
     uniq, index, tables = [], {}, {}
@@ -587,7 +595,7 @@ def build_zone(z):
         for fr in range(36):
             if 'half' in u:                  # boss : planche de 12 x 24 ; moitie haute (tete) ou basse (corps)
                 if fr >= 32: ptrs.append(EXPLO_PTRS[fr - 32]); continue          # mort : explosions (images deja residentes)
-                d = masked(g, (fr % 4) * 12, (fr // 4) * 24 + 12 * u['half'], 12, 12, True)
+                d = masked(g, (fr % 4) * 12, (u['rows'][fr // 4] if 'rows' in u else fr // 4) * 24 + 12 * u['half'], 12, 12, True)
             else:
                 d = masked(g, (fr % 4) * 12, (u['rows'][fr // 4] if 'rows' in u else fr // 4) * 12, 12, 12, True)
             ptrs.append(intern(d))
@@ -1052,7 +1060,7 @@ def main():
         f.write('tiles        equ ZSTAGE+Z_TILES\ntilemap      equ ZSTAGE+Z_TILEMAP\ntkind        equ ZSTAGE+Z_TKIND\n')
     with open(os.path.join(ROOT, 'src', 'zones.inc'), 'w') as f:
         f.write('; --- genere par tools/convert.py : repertoire des zones (piste, secteur, nombre de secteurs, adresse de lecture) ---\nzone_dir:\n')
-        for t, sc, n, la in zdir: f.write(' db %d,%d,%d\n dw #%04X\n db 0\n' % (t, sc, n, la))
+        for t, sc, n, la in zdir: f.write(' db %d,%d,%d\n dw #%04X\n' % (t, sc, n, la))
     print('logo : 16384 -> %d octets (%d secteurs, piste %d)' % (len(lcomp), logo_n, logo_trk))
     print('cover : 16384 -> %d octets (%d secteurs, piste %d)' % (len(ccomp), cover_n, cover_trk))
     for l in info: print(l)

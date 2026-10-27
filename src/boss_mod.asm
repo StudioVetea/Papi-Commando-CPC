@@ -9,7 +9,15 @@ m_boss_tick:
             and #70
             cp #70
             jp z,hm_tick
-            ld a,(enemies+E_STATE)      ; le corps est-il en jeu ?
+            cp #60
+            jr nz,.std
+            ld hl,b_gi                  ; GazoKu (corps de classe 6 : grenadier) : ni rafale ni grenade ici (officers_update) ; seulement son delai d'invulnerabilite aux explosions
+            ld a,(hl)
+            or a
+            ret z
+            dec (hl)
+            ret
+.std        ld a,(enemies+E_STATE)      ; le corps est-il en jeu ?
             dec a
             ret nz
             ld hl,b_gi
@@ -389,7 +397,14 @@ m_officers_update:
             pop bc
             jr .step
 .gthrow     ld (hl),25                  ; grenadier : prochain lancer dans 2 s (25 pas de 4 images), portee des officiers + 20 %
-            ld a,EG_RANGEX*6/5
+            ld a,ixl
+            or a
+            jr nz,.gt1
+            ld a,(bk_on)                ; GazoKu (place 0 d'une mission de boss) : une grenade toutes les 1,5 s (19 pas de 4 images)
+            or a
+            jr z,.gt1
+            ld (hl),19
+.gt1            ld a,EG_RANGEX*6/5
             ld (eg_rx),a
             ld a,EG_RANGEY*6/5
             ld (eg_ry),a
