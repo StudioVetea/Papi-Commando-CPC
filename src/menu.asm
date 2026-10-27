@@ -53,6 +53,7 @@ c_x         equ MV+66
 lbuf        equ MV+80           ; 8 colonnes : [0] et [7] restent noires (elles effacent la trace d'un pas), [1..6] = l'image
 CHASE_Y     equ 14              ; ligne des sprites de la poursuite (juste au-dessus du titre)
 MV_LEN      equ 96
+hof_txt     equ MV+256          ; texte du classement (genere par hx_build), a la suite des credits dans le bandeau defilant : 200 octets au plus
 
             jp menu_run                 ; point d'entree : MENU_LOAD
             include 'menu_gfx.asm'      ; le titre
@@ -73,6 +74,7 @@ menu_run:
             res 7,(hl)
             ld a,(hl)
             ld (m_z),a
+            call hx_build
             call blackout
             call mk_tab
             ld hl,palette_hw            ; palette du jeu (les explosions sont celles du jeu)
@@ -275,6 +277,79 @@ hof_go2:    ld (HOF_MODE),a
             ld hl,menu_enter
             push hl
             jp ovl_hof
+
+; texte du classement pour le bandeau : "Hall of Fame - 1 NOM 9000 - 2 NOM 7500 - ..." (noms sans leurs points, scores sans zeros de tete)
+hx_build:   ld de,hof_txt
+            ld hl,hx_hdr
+.h          ld a,(hl)
+            or a
+            jr z,.he
+            ld (de),a
+            inc hl
+            inc de
+            jr .h
+.he         ld hl,HOF_E0
+            ld c,'1'
+.e          push hl
+            ld a,c
+            ld (de),a
+            inc de
+            ld a,' '
+            ld (de),a
+            inc de
+            ld b,10
+.n          ld a,(hl)
+            ld (de),a
+            inc hl
+            inc de
+            djnz .n
+.s          dec de                      ; les points qui completent le nom
+            ld a,(de)
+            cp '.'
+            jr z,.s
+            inc de
+            ld a,' '
+            ld (de),a
+            inc de
+            ld b,5                      ; 5 chiffres, sans les zeros de tete
+.z          ld a,(hl)
+            or a
+            jr nz,.p
+            inc hl
+            djnz .z
+            jr .q
+.p          ld a,(hl)
+            add a,'0'
+            ld (de),a
+            inc hl
+            inc de
+            djnz .p
+.q          ld a,' '
+            ld (de),a
+            inc de
+            ld a,'-'
+            ld (de),a
+            inc de
+            ld a,' '
+            ld (de),a
+            inc de
+            pop hl
+            ld a,h
+            add a,8
+            ld h,a
+            inc c
+            ld a,c
+            cp '8'
+            jr nz,.e
+            ld b,20                     ; blanc de fin
+.sp         ld a,' '
+            ld (de),a
+            inc de
+            djnz .sp
+            xor a
+            ld (de),a
+            ret
+hx_hdr:     db 'Hall of Fame - ',0
 
 ; classement (Hall of Fame) : au 1er passage, les 7 entrees initiales sont recopiees dans les 16 octets libres de la page A
 hof_init:   ld a,(HOF_MAG1)
@@ -730,8 +805,17 @@ scroll_step:
             ld a,(hl)
             or a
             jr nz,.nz
+            ld de,txt_end               ; fin des credits : le classement suit ; fin du classement : retour aux credits
+            ld a,l
+            xor e
+            ld b,a
+            ld a,h
+            xor d
+            or b
+            ld hl,hof_txt
+            jr z,.g1
             ld hl,txt_scroll
-            ld a,(hl)
+.g1         ld a,(hl)
 .nz         ld (m_ptr),hl
             call set_glyph
             ld a,6
@@ -1067,7 +1151,8 @@ draw_act:   ld (a_src),hl
 txt_start:  db 'START GAME !',0
 txt_access: db 'ACCESS CODE',0
 txt_zone:   db 'ZONE 1',0
-txt_scroll: db '                    Papi Commando CPC !! A game by Studio Vetea - GFX, SFX, Design by Vetea - Music by Jon Something - Code by Vetea & Claude IA - Version 73 - @[ 2026 Studio Vetea                    ',0   ; @[ = le (c) en 2 caracteres
+txt_scroll: db '                    Papi Commando CPC !! A game by Studio Vetea - GFX, SFX, Design by Vetea - Music by Jon Something - Code by Vetea & Claude IA - Version 73 - @[ 2026 Studio Vetea                    '   ; @[ = le (c) en 2 caracteres
+txt_end:    db 0
 
 fr_idx:     db 255,255,255,3,255,255,2,255,255,1,255,255,0       ; temps restant 0..12 -> image (255 : on ne redessine pas)
 ; positions (x en octets, y en lignes) des explosions de 12 x 24 : tout autour et sur les lettres du titre (lignes 30 a 56) ;
