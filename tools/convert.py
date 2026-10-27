@@ -217,7 +217,7 @@ XSLOT_BASE = 0x3000 - NXS * 144
 INTRO_LOAD = 0x4000                    # overlay des ecrans de mission et du bandeau
 INTRO_N = 4                            # secteurs de l'overlay des ecrans de mission
 MENU_LOAD = 0x5000                     # overlay du menu principal (lu sur la disquette)
-MENU_N = 20                            # secteurs reserves a l'overlay (code, titre, sprites de la poursuite)
+MENU_N = 18                            # secteurs reserves a l'overlay (code, titre, sprites de la poursuite)
 Z_SPR = Z_TILES + 40 * 48             # 2648 : les tuiles occupent toujours 40 emplacements
 
 # types d'unites : fiche de caracteristiques (le moteur ne connait plus que ces nombres)
