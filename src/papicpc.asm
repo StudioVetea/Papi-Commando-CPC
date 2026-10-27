@@ -3503,6 +3503,8 @@ egrenade_update:
             ld (eg_eox),a
             ld bc,(eg_ey)               ; une caisse posee a cote est detruite
             call crate_blast
+            ld a,6                      ; les bidons explosifs dans le souffle de la grenade ennemie (module des vehicules)
+            call veh_if
             ld a,(eg_ex)                ; Papi dans l'explosion ? Un bloc de carte autour (6 octets, 8 lignes) :
             ld hl,p_x                   ; 9 octets et 18 lignes avant
             sub (hl)

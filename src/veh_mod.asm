@@ -45,7 +45,9 @@ mv_disp:    dec a
             jp z,mv_gren
             dec a
             jp z,mv_barrel
-            jp mv_late
+            dec a
+            jp z,mv_late
+            jp mv_egren                 ; 6 : explosion d'une grenade ennemie (eg_ex, eg_ey)
 
 mv_tick:    ld a,(p_state)
             cp 3
@@ -1121,6 +1123,23 @@ mv_barrel:  ld a,(veh_on)
             cp 3
             ret c
             jp mv_explode
+
+; explosion d'une grenade ennemie (grenadier, officier) : seuls les bidons y sont sensibles (le camion n'est pas touche) ; on emprunte le code de la grenade de Papi
+;   en lui pretant les coordonnees de l'explosion ennemie (g_ex / g_ey sont rendus ensuite : la grenade de Papi peut exploser en meme temps)
+mv_egren:   ld hl,(g_ey)                ; y puis x (octets consecutifs, comme eg_ey / eg_ex)
+            push hl
+            ld a,(v_act)
+            push af
+            xor a                       ; pas de camion touche
+            ld (v_act),a
+            ld hl,(eg_ey)
+            ld (g_ey),hl
+            call mv_gren
+            pop af
+            ld (v_act),a
+            pop hl
+            ld (g_ey),hl
+            ret
 
 ; explosion de grenade (g_ex, g_ey) : le camion et les bidons dans le souffle
 mv_gren:    ld a,(v_init)
