@@ -1077,3 +1077,12 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 ### v73 : les bidons explosifs sont des abris
 - Un ennemi peut maintenant se mettre **a couvert derriere un bidon** (case #17) comme derriere un mur rouge : `cover_seek` et le test de couverture de `enemy_think` acceptent la case #16 (bits 1, 2 et 4) en plus du mur (2) ; une caserne (bit 2 seul) reste exclue. Il tire a travers son bidon comme a travers un mur ; si le bidon explose, l'abri disparait (aux risques et perils du tireur).
 - Fluidite : 50,1 fps (bot, 2 graines).
+
+### v78 : demo au menu, classement dans le bandeau, boss GazoKu, IA des ennemis C++
+(La numerotation reprend a 78 : les versions 74 a 77 ont ete regroupees ici.)
+- **Zone 6 "C++ BASE CAMP"** (code BANDANA) : missions 1 a 3, snipers sur les tuiles bleu clair (leur tir traverse les obstacles qui les entourent) et marron ; les snipers sont animes sur l'ecran de mission ; les grenades ennemies font exploser les bidons.
+- **Boss GazoKu** (zone 6, mission 4) : 45 PV, 750 points, comportement de grenadier (garde ses distances, recule si Papi approche, une grenade toutes les 1,5 s), +15 % de vitesse ; garde : 3 grenadiers + 4 snipers (pas de soldats : une table d'images de plus ne tient pas en memoire permanente).
+- **Menu principal** : a la fin de la musique, une **demo** (zone au hasard sans boss ni camion, ennemis sans Papi, ~10 s) remplace l'ecran du Hall of Fame, puis retour au menu. Le **classement** defile dans le bandeau, a la suite des credits.
+- **IA des ennemis C++** : le soldat va au contact, l'officier s'arrete a portee de grenade (~7 cases), le general a portee de tir (~10 cases) : table `near_tab`. Sniper : 2 PV, balles 20 % moins rapides (le boss Helmut partage cette vitesse).
+- Memoire permanente : repertoire des zones sur 5 octets par entree (au lieu de 6).
+- Regle : **le numero de version du bandeau (menu.asm) est incremente a chaque build livre**.
