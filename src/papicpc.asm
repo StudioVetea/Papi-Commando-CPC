@@ -86,7 +86,7 @@ BANNER      equ #8760           ; ligne 0 du bandeau : #8000 + 2 x (1024 - 40 x 
 SPRSLOT     equ 13              ; images de sprites par trou de la page A (1888 octets = 2048 - 2 rangees) : 104 emplacements
 
 MAXENEMY    equ 12                ; equilibrage : 12 ennemis au plus a l'ecran
-NEAR        equ 5               ; a moins de 5 cases de Papi un ennemi s'arrete et tire
+NEAR        equ 5               ; (boss : a moins de 5 cases de Papi il s'arrete et tire ; les autres classes : near_tab)
 TICK_STOP   equ 5               ; on ne commence plus un ennemi apres 16,8 ms d'image
 ESIZE       equ 16
 NBUL        equ 10              ; 0-3 : Papi, 4-9 : ennemis
@@ -137,7 +137,7 @@ PBUL_SPEED  equ 179             ; balles de Papi : 179/256 = 70 % des images (10
 PSPEED_X    equ 90              ; Papi : cumul horizontal 90/256 = 0,35 octet par image (17,5 octets/s ; 25 avant)
 PSPEED_Y    equ 179             ; Papi : cumul vertical 179/256 = 0,7 ligne par image (35 lignes/s ; 50 avant)
 B_ACC       equ 7               ; balles ennemies : cumul de vitesse (voir EBUL_SPEED)
-SBUL_SPEED  equ 121             ; balles du sniper : 67,5 % de PBUL_SPEED (75 % puis -10 %), avec le pas entier
+SBUL_SPEED  equ 97              ; balles du sniper : 54 % de PBUL_SPEED (67,5 % puis -20 %), avec le pas entier
 EBUL_SPEED  equ 131             ; balles ennemies : elles avancent 131 images sur 256 (154 avant : -15 %) d'un pas moitie
                                 ; moins long (shot_tab / 2) : 15 x pas/s au lieu de 25 x pas/s = 60 % de la v03b
 
@@ -1999,6 +1999,10 @@ seek_tab:   db 2,2, 1,1, 3,0, 0,1, 4,0
             db 34,2, 33,1, 35,0, 32,1, 36,0
 
 ; donnees (pas de code ici : le code qui precede ne doit jamais "tomber" dedans)
+; distance (en cases du champ de distances) a laquelle un ennemi s'arrete et tire, par classe (0, soldat, officier, general, boss, -, grenadier, sniper) :
+;   soldat : va au contact (il ne s'arrete que sur la case de Papi) ; officier : a portee de grenade (60 lignes, environ 7 cases) ; general : a portee de tir (environ 10 cases)
+near_tab:   db 5,1,8,11,5,5,5,5           ; (s'arrete s'il est a moins de cette distance)
+            assert hi(near_tab)==hi(near_tab+7)
 type_ptr:   dw soldat_frames,officer_frames,general_frames,general_frames,boss_frames,boss_frames,officer_frames       ; types 4 (corps du boss) et 5 (tete) : la table des generals sert au corps
             include 'zones.inc'         ; repertoire des zones (genere)
 DT_FX       equ 0
@@ -2893,7 +2897,7 @@ enemy_think:
             jr nz,.seek
             ld a,3
             ld (cov_now),a
-            jr .near                    ; en couverture : il s'arrete, se tourne vers Papi et tire
+            jp .near                    ; en couverture : il s'arrete, se tourne vers Papi et tire
 .seek       ld a,(frame)                ; pas encore a couvert : il cherche un poste proche (sauf 1 reflexion sur 4,
             and #30                     ; pour ne jamais rester bloque devant un poste inatteignable)
             jr z,.nocov
@@ -2902,7 +2906,15 @@ enemy_think:
             jr z,.nocov
             call enemy_setdir           ; il se dirige vers le poste (droite, gauche ou bas) et tire en marchant
             jp enemy_try_fire
-.nocov
+.nocov      call gr_cls                 ; E = distance d'arret de cette classe (near_tab : il s'arrete s'il est plus pres que cela)
+            rrca
+            rrca
+            rrca
+            rrca
+            add a,lo(near_tab)
+            ld l,a
+            ld h,hi(near_tab)
+            ld e,(hl)
             ld a,(ix+E_X)
             add a,3
             ld b,a
@@ -2916,7 +2928,7 @@ enemy_think:
             ld a,(hl)
             cp 255
             jr z,.direct                ; champ pas encore pret : tout droit vers Papi
-            cp NEAR
+            cp e
             jr c,.near                  ; assez pres : je m'arrete et je tire
             ld c,a                      ; C = ma distance
             ld d,4                      ; D = index dans dir_tab, 4 = immobile

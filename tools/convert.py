@@ -230,9 +230,9 @@ UNITS = {
     # GRENADIER (cahier des charges du grenadier C++) : 1 PV, 20 points, vitesse des soldats, ne lance que des grenades (toutes les 2 s, portee des officiers +20 %), garde ses distances,
     #   ne se met pas a couvert ; planche de 4 directions (droite, gauche, bas, haut) + mort : 'rows' = ligne de la planche pour chacune des 9 lignes du moteur (4 : mort)
     6: dict(name='grenadier', sheet='GrenadierC___12x12.png', fire=240, hp=1, pts=2, spd=0, gren=1, cls=6, rows=[0, 1, 2, 3, 0, 1, 0, 1, 4]),
-    # SNIPER C++ (cahier des charges du sniper) : 3 PV, 50 points, immobile dans un trou de la carte (marron des obstacles), sort, vise 5 s, tire toutes les 2 s, rentre ; tout son
+    # SNIPER C++ (cahier des charges du sniper) : 2 PV, 50 points, immobile dans un trou de la carte (marron des obstacles), sort, vise 5 s, tire toutes les 2 s, rentre ; tout son
     #   comportement est dans la banque 7 (sn_mod). Planche de 6 lignes : sortie, retour, vise bas / bas droite / bas gauche (une image), mort (4 images) : 'rows' = ligne pour chacune des 9 lignes du moteur
-    7: dict(name='sniper', sheet='SniperC___12x12.png', fire=96, hp=3, pts=5, spd=0, gren=0, cls=7, rows=[0, 1, 2, 3, 4, 4, 4, 4, 5]),
+    7: dict(name='sniper', sheet='SniperC___12x12.png', fire=96, hp=2, pts=5, spd=0, gren=0, cls=7, rows=[0, 1, 2, 3, 4, 4, 4, 4, 5]),
     # BOSS (12 x 24) : deux places d'ennemi empilees. 4 = le corps (pieds : c'est lui qui reflechit, marche et tire), 5 = la tete,
     # collee au-dessus (12 lignes plus haut). La planche fait 12 x 24 par image ; les 4 images de mort sont des explosions.
     4: dict(name='boss_corps', sheet='BossCaporal_12x24.png', half=1, fire=96, hp=30, pts=20, spd=0, gren=0, cls=4),

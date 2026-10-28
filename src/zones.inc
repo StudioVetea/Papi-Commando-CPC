@@ -47,10 +47,10 @@ zone_dir:
  db 33,2,7
  dw #5860
  db 34,0,9
- dw #6275
+ dw #6274
  db 35,0,9
- dw #626F
+ dw #626E
  db 36,0,9
- dw #6270
+ dw #626F
  db 37,0,9
- dw #5EF4
+ dw #5EF3
