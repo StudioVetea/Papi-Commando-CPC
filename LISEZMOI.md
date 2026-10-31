@@ -1078,6 +1078,9 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - Un ennemi peut maintenant se mettre **a couvert derriere un bidon** (case #17) comme derriere un mur rouge : `cover_seek` et le test de couverture de `enemy_think` acceptent la case #16 (bits 1, 2 et 4) en plus du mur (2) ; une caserne (bit 2 seul) reste exclue. Il tire a travers son bidon comme a travers un mur ; si le bidon explose, l'abri disparait (aux risques et perils du tireur).
 - Fluidite : 50,1 fps (bot, 2 graines).
 
+### v79 : correctif
+- **Eau** : Papi ne meurt plus au contact de l'eau (zones 4 a 6) ; le test du trou de sniper lisait la phase d'animation de l'eau. Les vrais trous restent mortels.
+
 ### v78 : demo au menu, classement dans le bandeau, boss GazoKu, IA des ennemis C++
 (La numerotation reprend a 78 : les versions 74 a 77 ont ete regroupees ici.)
 - **Zone 6 "C++ BASE CAMP"** (code BANDANA) : missions 1 a 3, snipers sur les tuiles bleu clair (leur tir traverse les obstacles qui les entourent) et marron ; les snipers sont animes sur l'ecran de mission ; les grenades ennemies font exploser les bidons.

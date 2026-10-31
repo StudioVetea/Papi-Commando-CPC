@@ -1417,6 +1417,8 @@ mv_hazard:  ld a,(v_nb)
             ld c,a
             call cell_ptr
             ld a,(hl)
+            bit 3,a                     ; eau : bits 4-5 = phase d'animation, pas un trou
+            jr nz,.en
             bit 5,a                     ; trou de sniper (bit 5) : mortel pour Papi
             jr nz,.pk
             and 7
