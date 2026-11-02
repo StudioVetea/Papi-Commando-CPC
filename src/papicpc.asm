@@ -137,7 +137,7 @@ PBUL_SPEED  equ 179             ; balles de Papi : 179/256 = 70 % des images (10
 PSPEED_X    equ 90              ; Papi : cumul horizontal 90/256 = 0,35 octet par image (17,5 octets/s ; 25 avant)
 PSPEED_Y    equ 179             ; Papi : cumul vertical 179/256 = 0,7 ligne par image (35 lignes/s ; 50 avant)
 B_ACC       equ 7               ; balles ennemies : cumul de vitesse (voir EBUL_SPEED)
-SBUL_SPEED  equ 97              ; balles du sniper : 54 % de PBUL_SPEED (67,5 % puis -20 %), avec le pas entier
+SBUL_SPEED  equ 107             ; balles du sniper : 107/256 = 42 % des images (+10 % sur la v81 : 97), avec le pas entier
 EBUL_SPEED  equ 131             ; balles ennemies : elles avancent 131 images sur 256 (154 avant : -15 %) d'un pas moitie
                                 ; moins long (shot_tab / 2) : 15 x pas/s au lieu de 25 x pas/s = 60 % de la v03b
 
