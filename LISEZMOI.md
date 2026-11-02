@@ -1078,6 +1078,9 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - Un ennemi peut maintenant se mettre **a couvert derriere un bidon** (case #17) comme derriere un mur rouge : `cover_seek` et le test de couverture de `enemy_think` acceptent la case #16 (bits 1, 2 et 4) en plus du mur (2) ; une caserne (bit 2 seul) reste exclue. Il tire a travers son bidon comme a travers un mur ; si le bidon explose, l'abri disparait (aux risques et perils du tireur).
 - Fluidite : 50,1 fps (bot, 2 graines).
 
+### v81 : les boss evitent les flammes
+- **Missions de boss** : les flammes des bidons explosifs sont un obstacle pour les ennemis (GazoKu et sa garde) : ils ne s'y engagent plus et ne meurent plus bêtement. Papi les traverse toujours (et s'y brule).
+
 ### v80 : barbeles
 - **Zones 5 et 6** : les extremites des barbeles (tuiles 167 et 168) bloquent maintenant Papi comme le reste de la cloture : il ne passe plus au travers dans les coins.
 

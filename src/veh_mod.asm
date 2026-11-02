@@ -1238,21 +1238,30 @@ mv_gren:    ld a,(v_init)
             djnz .l
             ret
 
+; la case HL devient une flamme (case = 4) ; en mission de boss elle porte aussi le bit 6 : les ennemis (le boss) ne la franchissent pas (Papi si : can_stand_p ne teste que le bit 0)
+mx_flame:   push bc
+            ld a,(hl)
+            and #E8
+            or 4
+            ld c,a
+            ld a,(bk_on)
+            or a
+            ld a,c
+            jr z,.s
+            or #40
+.s          ld (hl),a
+            pop bc
+            ret
+
 ; IY = bidon : il explose. Les deux cases deviennent des flammes (case = 4), explosion, 3 points de degat autour (ennemis, Papi, camion)
 mv_explode: ld (iy+3),2
             ld (iy+4),#FF
             ld l,(iy+0)
             ld h,(iy+1)
-            ld a,(hl)
-            and #E8
-            or 4
-            ld (hl),a
+            call mx_flame
             ld de,16
             add hl,de
-            ld a,(hl)
-            and #E8
-            or 4
-            ld (hl),a
+            call mx_flame
             ld d,0                      ; flammes : image 0, tout de suite (les explosions effacent depuis le miroir)
             call mv_fdraw
             call mv_bxy
@@ -1388,14 +1397,18 @@ mv_flames:  ld a,(v_nb)
             ret z
             ld l,(iy+0)
             ld h,(iy+1)
-            bit 6,(hl)
-            ret nz
+            ld a,(hl)
+            and #44                     ; bit 6 : un ennemi est sur la case (le bit 6 d'une flamme de mission de boss n'est pas un ennemi : #44)
+            cp #40
+            ret z
             dec c
             jr z,.one
             ld bc,16
             add hl,bc
-            bit 6,(hl)
-            ret nz
+            ld a,(hl)
+            and #44
+            cp #40
+            ret z
             ld (iy+4),d
             jp mv_fdraw
 .one        ld (iy+4),d
