@@ -1078,6 +1078,9 @@ ghost.py (mission du boss, 8 et 12 places) : 0 octet fantôme, 0 octet faux.
 - Un ennemi peut maintenant se mettre **a couvert derriere un bidon** (case #17) comme derriere un mur rouge : `cover_seek` et le test de couverture de `enemy_think` acceptent la case #16 (bits 1, 2 et 4) en plus du mur (2) ; une caserne (bit 2 seul) reste exclue. Il tire a travers son bidon comme a travers un mur ; si le bidon explose, l'abri disparait (aux risques et perils du tireur).
 - Fluidite : 50,1 fps (bot, 2 graines).
 
+### v80 : barbeles
+- **Zones 5 et 6** : les extremites des barbeles (tuiles 167 et 168) bloquent maintenant Papi comme le reste de la cloture : il ne passe plus au travers dans les coins.
+
 ### v79 : correctif
 - **Eau** : Papi ne meurt plus au contact de l'eau (zones 4 a 6) ; le test du trou de sniper lisait la phase d'animation de l'eau. Les vrais trous restent mortels.
 

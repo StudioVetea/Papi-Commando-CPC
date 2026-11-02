@@ -511,6 +511,9 @@ def build_zone(z):
                     if pb == HOLE: tholes.add(t)
                     if k == 0x08: twater.add(t)
         tkind.append(k)
+    if z.get('gid0') == 157:                            # TileSet5 : le barbele (tuiles 8 a 11, rangee du haut) : les extremites 10 et 11 n'ont pas le carre bleu des tuiles 8 et 9 -> Papi passait au travers, dans les coins
+        for t in (10, 11):
+            if tkind[t] == 0: tkind[t] = tkind[9]
     wframes = None
     if z.get('water'):                                  # l'eau : 3 images 12 x 8 (1 2 3 2) ; la 1re remplace l'image de la tuile d'eau du tileset (palette de l'eau : voir load_water)
         assert len(twater) == 1, 'zone %s : une seule tuile d eau attendue (carre rose des obstacles), trouve %s' % (z['name'], sorted(twater))
